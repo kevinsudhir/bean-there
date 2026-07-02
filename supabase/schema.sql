@@ -1,0 +1,56 @@
+-- Bean There — Supabase schema
+-- Run this in your Supabase project: Dashboard → SQL Editor → New query → paste → Run.
+
+-- 1) The cafes table. Scores, items, and photos are stored as JSON so each
+--    cafe is a single row that maps directly to the Cafe type in lib/types.ts.
+create table if not exists public.cafes (
+  id uuid primary key default gen_random_uuid(),
+  slug text unique not null,
+  name text not null,
+  area text not null,
+  date date not null,
+  scores jsonb not null,
+  items jsonb not null default '[]',
+  verdict text not null default '',
+  photos jsonb not null default '[]',
+  created_at timestamptz not null default now()
+);
+
+-- Helpful index for sorting by visit date.
+create index if not exists cafes_date_idx on public.cafes (date desc);
+
+-- 2) Row Level Security.
+--    Reads are public (anyone can view the site). Writes (adding cafes) require
+--    an authenticated user, so only you and your wife — once logged in — can add.
+alter table public.cafes enable row level security;
+
+create policy "Public can read cafes"
+  on public.cafes for select
+  using (true);
+
+create policy "Authenticated can insert cafes"
+  on public.cafes for insert
+  to authenticated
+  with check (true);
+
+create policy "Authenticated can update cafes"
+  on public.cafes for update
+  to authenticated
+  using (true);
+
+-- 3) Storage bucket for photos (public read).
+--    Create a bucket named "cafe-photos" in Dashboard → Storage, mark it Public,
+--    OR run the following:
+insert into storage.buckets (id, name, public)
+values ('cafe-photos', 'cafe-photos', true)
+on conflict (id) do nothing;
+
+-- Allow public read of photos, authenticated upload.
+create policy "Public can read photos"
+  on storage.objects for select
+  using (bucket_id = 'cafe-photos');
+
+create policy "Authenticated can upload photos"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'cafe-photos');

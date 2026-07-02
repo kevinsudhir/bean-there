@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * DESIGN TOKENS — single source of truth for the whole app.
+ * Every colour lives here once. Components never hardcode hex values; they use
+ * Tailwind classes (bg-card, text-ink…) which resolve to these variables.
+ * Dark mode simply overrides the same variable names under [data-theme="dark"].
+ */
+:root {
+  --bg: #f1eadc;
+  --card: #f8f2e6;
+  --ink: #241c14;
+  --dim: #8c7b64;
+  --line: #d6c8af;
+  --amber: #c77d18;
+  --espresso: #4a2c17;
+  --crema: #6b4227;
+
+  /* Stroke colour for the illustrated cups/muffins (flips in dark mode). */
+  --itemstroke: #241c14;
+  /* Wall-cup tokens: saucer fill, the un-filled part of the cup, score text. */
+  --saucer: #ede0c8;
+  --empty: #e8dac0;
+  --score: #241c14;
+
+  /* Fonts come from next/font (app/layout.tsx), exposed as --font-display,
+     --font-mono, --font-voice on the <html> element. */
+}
+
+[data-theme="dark"] {
+  --bg: #171009;
+  --card: #241a12;
+  --ink: #f3ece0;
+  --dim: #a6927a;
+  --line: #3a2c1e;
+  --amber: #e9a63a;
+  --espresso: #4a2c17;
+  --crema: #6b4227;
+  --itemstroke: #f3ece0;
+  --saucer: #2b2016;
+  --empty: #2b2016;
+  --score: #f3ece0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  -webkit-font-smoothing: antialiased;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Hide scrollbars on horizontal photo strips while keeping them scrollable. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * WALL CUP interaction — the ceramic cup lifts slightly off its saucer on
+ * hover/focus, and the steam fades. Uses a descendant selector, so it lives
+ * in CSS rather than inline Tailwind utilities.
+ */
+.cupg {
+  transition: transform 0.28s cubic-bezier(0.34, 1.3, 0.5, 1);
+}
+.wallcup:hover .cupg,
+.wallcup:focus-visible .cupg {
+  transform: translateY(-8px);
+}
+.steam {
+  opacity: 0.55;
+  transition: opacity 0.25s;
+}
+.steam path {
+  stroke: var(--dim);
+  stroke-width: 3.4;
+  fill: none;
+  stroke-linecap: round;
+}
+.wallcup:hover .steam,
+.wallcup:focus-visible .steam {
+  opacity: 0;
+}
+
+/* On touch devices there's no hover, so keep steam and don't lift. */
+@media (hover: none) {
+  .wallcup:hover .cupg,
+  .wallcup:focus-visible .cupg {
+    transform: none;
+  }
+  .wallcup:hover .steam {
+    opacity: 0.55;
+  }
+}
