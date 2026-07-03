@@ -84,12 +84,13 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
               {item.name}
               {item.star && <span className="text-[0.7em] text-amber">★</span>}
             </div>
-            <div className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-dim">
+            <div className="mt-0.5 font-mono text-[13px] uppercase tracking-wider text-dim">
               {whoLabel[item.who]}
               {typeof item.price === "number" && (
-                <span className="ml-1.5 text-amber">
-                  £{item.price.toFixed(2)}
-                </span>
+                <>
+                  <span className="mx-1.5 text-line">|</span>
+                  <span className="text-amber">£{item.price.toFixed(2)}</span>
+                </>
               )}
             </div>
             <div className="font-display text-[clamp(22px,2.4vw,32px)] font-extrabold">

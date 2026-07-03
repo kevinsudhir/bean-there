@@ -3,20 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * A tiny "pour the perfect cup" mini-game for the empty/error states.
- * Coffee rises in the cup; tap STOP to stop the pour and try to land on the
- * target line. Closer = higher score. One tap to play, purely for fun while
- * there's nothing else on the wall.
+ * A "pour the perfect cup" mini-game for the empty/error states.
+ * Coffee rises in the cup; tap STOP to land on the dotted target line.
+ * Closer = higher score. A great pour (85+) sends steam curling off the cup.
  */
 export default function PourGame() {
   const [fill, setFill] = useState(0); // 0–100, current coffee level
   const [pouring, setPouring] = useState(false);
-  const [target] = useState(() => 55 + Math.random() * 35); // 55–90
+  const [target, setTarget] = useState(() => 55 + Math.random() * 35); // 55–90
   const [result, setResult] = useState<number | null>(null); // score 0–100
   const [best, setBest] = useState(0);
   const raf = useRef<number | null>(null);
 
-  // Animate the fill upward while pouring.
   useEffect(() => {
     if (!pouring) return;
     let last = performance.now();
@@ -24,9 +22,8 @@ export default function PourGame() {
       const dt = now - last;
       last = now;
       setFill((f) => {
-        const next = f + dt * 0.045; // pour speed
+        const next = f + dt * 0.045;
         if (next >= 100) {
-          // Overflowed — a miss.
           setPouring(false);
           setResult(0);
           return 100;
@@ -44,6 +41,7 @@ export default function PourGame() {
   function start() {
     setResult(null);
     setFill(0);
+    setTarget(55 + Math.random() * 35);
     setPouring(true);
   }
 
@@ -51,7 +49,7 @@ export default function PourGame() {
     if (!pouring) return;
     setPouring(false);
     const diff = Math.abs(fill - target);
-    const score = Math.max(0, Math.round(100 - diff * 3)); // closer = higher
+    const score = Math.max(0, Math.round(100 - diff * 3));
     setResult(score);
     setBest((b) => Math.max(b, score));
   }
@@ -62,52 +60,44 @@ export default function PourGame() {
       : result === 0
         ? "Overflowed! Steadier next time."
         : result >= 95
-          ? "Barista-level pour. ☕"
+          ? "Barista-level pour."
           : result >= 75
             ? "Nice and smooth."
             : result >= 50
               ? "Drinkable."
               : "A bit off — try again.";
 
+  const celebrate = result !== null && result >= 85;
+  const targetY = 40 + (140 * (100 - target)) / 100;
+  const fillY = 40 + (140 * (100 - fill)) / 100;
+
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="relative h-40 w-32">
-        {/* Cup */}
-        <svg viewBox="0 0 200 200" className="h-full w-full">
+      <div className="relative h-44 w-36">
+        <svg viewBox="0 0 200 210" className="h-full w-full">
           <defs>
             <clipPath id="pourclip">
               <path d="M50,40 H150 C146,150 128,180 100,180 C72,180 54,150 50,40 Z" />
             </clipPath>
           </defs>
-          {/* target line */}
-          <line
-            x1="46"
-            x2="154"
-            y1={40 + (140 * (100 - target)) / 100}
-            y2={40 + (140 * (100 - target)) / 100}
-            stroke="var(--amber)"
-            strokeWidth="2"
-            strokeDasharray="5 4"
-          />
+
+          {/* Steam — only on a great pour */}
+          {celebrate && (
+            <g fill="none" stroke="var(--crema)" strokeWidth="5" strokeLinecap="round">
+              <path className="steam-puff" style={{ animationDelay: "0s" }} d="M85,30 q-7,-10 0,-20" />
+              <path className="steam-puff" style={{ animationDelay: "0.5s" }} d="M100,28 q7,-10 0,-20" />
+              <path className="steam-puff" style={{ animationDelay: "1s" }} d="M115,30 q-7,-10 0,-20" />
+            </g>
+          )}
+
           {/* fill */}
           <g clipPath="url(#pourclip)">
             <rect x="40" y="40" width="120" height="150" fill="var(--empty)" />
-            <rect
-              x="40"
-              y={40 + (140 * (100 - fill)) / 100}
-              width="120"
-              height="200"
-              fill="var(--espresso)"
-            />
-            <rect
-              x="40"
-              y={40 + (140 * (100 - fill)) / 100}
-              width="120"
-              height="6"
-              fill="var(--crema)"
-            />
+            <rect x="40" y={fillY} width="120" height="200" fill="var(--espresso)" />
+            <rect x="40" y={fillY} width="120" height="6" fill="var(--crema)" />
           </g>
-          {/* handle + body outline */}
+
+          {/* body + handle outline */}
           <path
             d="M150,70 C185,78 185,130 152,142"
             fill="none"
@@ -121,6 +111,33 @@ export default function PourGame() {
             stroke="var(--ink)"
             strokeWidth="4"
           />
+
+          {/* TARGET LINE — drawn last so it's always visible, with a halo */}
+          <line
+            x1="42"
+            x2="158"
+            y1={targetY}
+            y2={targetY}
+            stroke="var(--bg)"
+            strokeWidth="6"
+            strokeLinecap="round"
+            opacity="0.6"
+          />
+          <line
+            x1="44"
+            x2="156"
+            y1={targetY}
+            y2={targetY}
+            stroke="var(--amber)"
+            strokeWidth="3"
+            strokeDasharray="7 5"
+            strokeLinecap="round"
+          />
+          {/* little target arrow on the right edge */}
+          <path
+            d={`M162,${targetY} l8,-5 v10 z`}
+            fill="var(--amber)"
+          />
         </svg>
       </div>
 
@@ -132,21 +149,21 @@ export default function PourGame() {
       </button>
 
       {message && (
-        <p className="font-voice text-base italic text-ink">
+        <p className="font-voice text-xl italic text-ink">
           {message}{" "}
           {result! > 0 && (
-            <span className="font-mono text-xs not-italic text-amber">
+            <span className="font-mono text-base not-italic font-bold text-amber">
               {result}/100
             </span>
           )}
         </p>
       )}
       {best > 0 && (
-        <p className="font-mono text-[10px] uppercase tracking-widest text-dim">
+        <p className="font-mono text-[11px] uppercase tracking-widest text-dim">
           Best: {best}/100
         </p>
       )}
-      <p className="font-mono text-[10px] uppercase tracking-widest text-dim">
+      <p className="font-mono text-[13px] font-bold uppercase tracking-widest text-ink">
         Stop the pour on the dotted line
       </p>
     </div>

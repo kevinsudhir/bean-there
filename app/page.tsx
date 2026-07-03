@@ -13,8 +13,16 @@ import { getCafes } from "@/lib/cafes";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function HomePage() {
-  const cafes = await getCafes();
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: { preview?: string };
+}) {
+  // Dev/preview helper: visit /?preview=empty to see the empty state (and its
+  // game) on the live site without touching the database. Any other value or
+  // no param behaves normally.
+  const cafes =
+    searchParams.preview === "empty" ? [] : await getCafes();
 
   return (
     <main>
