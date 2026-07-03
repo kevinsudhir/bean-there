@@ -8,7 +8,7 @@ import { SITE } from "@/lib/config";
  */
 export default function Header() {
   return (
-    <header className="px-6 pt-9 sm:px-16">
+    <header className="overflow-x-clip px-6 pt-9 sm:px-16">
       <div className="flex flex-col gap-1 font-mono text-[11px] uppercase tracking-[0.16em] text-amber sm:flex-row sm:justify-between">
         <span>{SITE.kickerLeft}</span>
         <span>{SITE.kickerRight}</span>
@@ -30,7 +30,7 @@ export default function Header() {
               strokeWidth="3.4"
             />
           </svg>
-          <span className="pointer-events-none absolute left-1/2 top-[calc(100%+10px)] z-30 w-[420px] max-w-[78vw] -translate-x-1/2 rounded-2xl border-[1.5px] border-line bg-card px-5 py-4 text-left font-voice text-base normal-case italic leading-relaxed tracking-normal text-ink opacity-0 transition-opacity group-hover:opacity-100 group-focus:opacity-100">
+          <span className="pointer-events-none invisible absolute left-1/2 top-[calc(100%+10px)] z-30 w-[min(420px,calc(100vw-3rem))] -translate-x-1/2 rounded-2xl border-[1.5px] border-line bg-card px-5 py-4 text-left font-voice text-base normal-case italic leading-relaxed tracking-normal text-ink opacity-0 transition-opacity group-hover:visible group-hover:opacity-100 group-focus:visible group-focus:opacity-100">
             <b className="mb-2 block font-display text-[13px] font-extrabold not-italic uppercase tracking-wider text-amber">
               Our Order
             </b>
