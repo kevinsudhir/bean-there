@@ -36,8 +36,8 @@ export default function CafeListRow({
         </span>
       </span>
 
-      <span className="ml-auto flex flex-col items-end gap-0.5">
-        <span className="font-display text-xl font-extrabold text-amber">
+      <span className="ml-auto flex flex-none flex-col items-end gap-0.5">
+        <span className="whitespace-nowrap font-display text-xl font-extrabold text-amber">
           {overall.toFixed(1)}
           <small className="text-[0.5em] font-normal text-dim"> / 5</small>
         </span>

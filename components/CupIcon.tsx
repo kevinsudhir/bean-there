@@ -41,9 +41,10 @@ export default function CupIcon({
 
   // Plate of food (sandwiches, fries, halloumi, savoury dishes).
   if (type === "food") {
-    // A dome of food sitting on a plate; fills with colour to the score.
-    const body = "M14,34 C14,22 46,22 46,34 Z";
-    const yF = 34 - (34 - 24) * f;
+    // A tall serving cloche with a knob, on a plate; fills with colour to the
+    // score. The body is deep so mid scores read as clearly partial.
+    const body = "M14,40 C14,16 46,16 46,40 Z";
+    const yF = 40 - (40 - 21) * f;
     return (
       <svg
         viewBox="0 0 60 60"
@@ -59,9 +60,9 @@ export default function CupIcon({
         </defs>
         <g clipPath={`url(#${clipId})`}>
           <rect x="0" y="0" width="60" height="60" fill={CARD} />
-          <rect x="0" y={yF} width="60" height={34 - yF + 6} fill={ESPRESSO} />
+          <rect x="0" y={yF} width="60" height={40 - yF + 6} fill={ESPRESSO} />
         </g>
-        {/* food dome */}
+        {/* cloche dome */}
         <path
           d={body}
           fill="none"
@@ -70,9 +71,19 @@ export default function CupIcon({
           strokeLinejoin="round"
           vectorEffect="non-scaling-stroke"
         />
+        {/* knob */}
+        <circle
+          cx="30"
+          cy="19"
+          r="2.5"
+          fill={CARD}
+          stroke={STROKE}
+          strokeWidth="2"
+          vectorEffect="non-scaling-stroke"
+        />
         {/* plate */}
         <path
-          d="M8,36 C8,42 52,42 52,36"
+          d="M8,42 C8,48 52,48 52,42"
           fill="none"
           stroke={STROKE}
           strokeWidth="2"
@@ -81,7 +92,7 @@ export default function CupIcon({
         />
         <ellipse
           cx="30"
-          cy="36"
+          cy="42"
           rx="24"
           ry="3.5"
           fill="none"
