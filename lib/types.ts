@@ -32,7 +32,8 @@ export type ItemType =
   | "filter"
   | "cold"
   | "bake"
-  | "dessert";
+  | "dessert"
+  | "food";
 
 /** One thing we ordered — a drink or a bake — with its own rating. */
 export interface CafeItem {

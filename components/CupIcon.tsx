@@ -39,6 +39,60 @@ export default function CupIcon({
   const f = Math.max(0, Math.min(1, fill));
   const clipId = nextId("clip");
 
+  // Plate of food (sandwiches, fries, halloumi, savoury dishes).
+  if (type === "food") {
+    // A dome of food sitting on a plate; fills with colour to the score.
+    const body = "M14,34 C14,22 46,22 46,34 Z";
+    const yF = 34 - (34 - 24) * f;
+    return (
+      <svg
+        viewBox="0 0 60 60"
+        width={size}
+        height={size}
+        className={className}
+        aria-hidden="true"
+      >
+        <defs>
+          <clipPath id={clipId}>
+            <path d={body} />
+          </clipPath>
+        </defs>
+        <g clipPath={`url(#${clipId})`}>
+          <rect x="0" y="0" width="60" height="60" fill={CARD} />
+          <rect x="0" y={yF} width="60" height={34 - yF + 6} fill={ESPRESSO} />
+        </g>
+        {/* food dome */}
+        <path
+          d={body}
+          fill="none"
+          stroke={STROKE}
+          strokeWidth="2"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+        />
+        {/* plate */}
+        <path
+          d="M8,36 C8,42 52,42 52,36"
+          fill="none"
+          stroke={STROKE}
+          strokeWidth="2"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+        />
+        <ellipse
+          cx="30"
+          cy="36"
+          rx="24"
+          ry="3.5"
+          fill="none"
+          stroke={STROKE}
+          strokeWidth="2"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+    );
+  }
+
   // Muffin (bakes and desserts).
   if (type === "bake" || type === "dessert") {
     const body = "M16,30 L20,52 C20,54 40,54 40,52 L44,30 Z";

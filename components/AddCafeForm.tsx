@@ -19,7 +19,14 @@ const ITEM_TYPES: ItemType[] = [
   "cold",
   "bake",
   "dessert",
+  "food",
 ];
+
+// How each item type is shown in the dropdown. Only differs from the raw value
+// where a friendlier word reads better (e.g. the "food" type shows as "bites").
+const TYPE_LABEL: Partial<Record<ItemType, string>> = {
+  food: "bites",
+};
 const WHO: Who[] = ["him", "her", "shared"];
 
 const emptyItem = (): CafeItem => ({
@@ -94,6 +101,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
     { label: "Cappuccino", type: "cappuccino", name: "Cappuccino", who: "her" },
     { label: "Flat white", type: "latte", name: "Flat White", who: "him" },
     { label: "Bake", type: "bake", name: "", who: "shared" },
+    { label: "Bites", type: "food", name: "", who: "shared" },
   ];
 
   const addQuickItem = (p: (typeof QUICK_PICKS)[number]) =>
@@ -277,9 +285,16 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
                 <span className="font-mono text-[10px] uppercase tracking-wide text-dim">
                   {cat}
                 </span>
-                <span className="my-1 font-display text-xl font-extrabold">
-                  {scores[cat].toFixed(1)}
-                </span>
+                <input
+                  type="number"
+                  min={0}
+                  max={5}
+                  step={0.1}
+                  value={scores[cat]}
+                  onChange={(e) => setScore(cat, Number(e.target.value))}
+                  aria-label={`${cat} score`}
+                  className="my-1 w-16 rounded-md border-[1.5px] border-line bg-transparent text-center font-display text-xl font-extrabold text-ink outline-none focus:border-amber"
+                />
                 <input
                   type="range"
                   min={0}
@@ -287,6 +302,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
                   step={0.1}
                   value={scores[cat]}
                   onChange={(e) => setScore(cat, Number(e.target.value))}
+                  aria-label={`${cat} slider`}
                   className="w-full accent-amber"
                 />
               </div>
@@ -343,7 +359,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
                 >
                   {ITEM_TYPES.map((t) => (
                     <option key={t} value={t}>
-                      {t}
+                      {TYPE_LABEL[t] ?? t}
                     </option>
                   ))}
                 </select>
