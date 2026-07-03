@@ -76,10 +76,40 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
   const loved = overall >= SITE.badgeThreshold;
 
   const setScore = (cat: keyof Scores, value: number) =>
-    setScores((s) => ({ ...s, [cat]: value }));
+    setScores((s) => ({ ...s, [cat]: Math.round(value * 10) / 10 }));
   const setItem = (i: number, patch: Partial<CafeItem>) =>
     setItems((list) => list.map((it, j) => (j === i ? { ...it, ...patch } : it)));
   const addItem = () => setItems((list) => [...list, emptyItem()]);
+
+  // Quick-pick presets: one tap adds a pre-filled item (type, name, who) with a
+  // default 4.0 rating you then adjust. Speeds up the common orders.
+  const QUICK_PICKS: {
+    label: string;
+    type: ItemType;
+    name: string;
+    who: Who;
+  }[] = [
+    { label: "Mocha", type: "mocha", name: "Mocha", who: "him" },
+    { label: "Latte", type: "latte", name: "Latte", who: "him" },
+    { label: "Cappuccino", type: "cappuccino", name: "Cappuccino", who: "her" },
+    { label: "Flat white", type: "latte", name: "Flat White", who: "him" },
+    { label: "Bake", type: "bake", name: "", who: "shared" },
+  ];
+
+  const addQuickItem = (p: (typeof QUICK_PICKS)[number]) =>
+    setItems((list) => {
+      const next: CafeItem = {
+        type: p.type,
+        name: p.name,
+        who: p.who,
+        rating: 4,
+        star: false,
+      };
+      // If the only row is a blank starter, replace it; otherwise append.
+      const onlyBlankStarter =
+        list.length === 1 && !list[0].name.trim();
+      return onlyBlankStarter ? [next] : [...list, next];
+    });
   const removeItem = (i: number) =>
     setItems((list) => list.filter((_, j) => j !== i));
 
@@ -254,7 +284,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
                   type="range"
                   min={0}
                   max={5}
-                  step={0.5}
+                  step={0.1}
                   value={scores[cat]}
                   onChange={(e) => setScore(cat, Number(e.target.value))}
                   className="w-full accent-amber"
@@ -277,6 +307,21 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
               + Add item
             </button>
           </div>
+
+          {/* Quick-pick presets — one tap adds a pre-filled item */}
+          <div className="mb-3 flex flex-wrap gap-2">
+            {QUICK_PICKS.map((p) => (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => addQuickItem(p)}
+                className="rounded-pill border-[1.5px] border-amber px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-amber"
+              >
+                + {p.label}
+              </button>
+            ))}
+          </div>
+
           <div className="flex flex-col gap-3">
             {items.map((it, i) => (
               <div
@@ -317,11 +362,13 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
                   type="number"
                   min={0}
                   max={5}
-                  step={0.5}
+                  step={0.1}
                   className={`${field} sm:w-20`}
                   value={it.rating}
                   onChange={(e) =>
-                    setItem(i, { rating: Number(e.target.value) })
+                    setItem(i, {
+                      rating: Math.round(Number(e.target.value) * 10) / 10,
+                    })
                   }
                 />
                 <input
