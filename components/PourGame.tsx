@@ -93,11 +93,22 @@ export default function PourGame() {
           {/* saucer (drawn first, sits below the cup) */}
           <ellipse cx="120" cy="198" rx="78" ry="10" fill="none" stroke="var(--ink)" strokeWidth="4" />
 
-          {/* coffee fill — clipped to the cup so nothing spills out */}
-          <g clipPath="url(#pourclip)">
-            <rect x="48" y={fillY} width="144" height="130" fill="var(--espresso)" />
-            <rect x="48" y={fillY} width="144" height="6" fill="var(--crema)" />
-          </g>
+          {/* coffee fill — clipped to the cup so nothing spills out.
+              Only rendered once there's something in the cup, so on load
+              (fill 0) the cup is genuinely empty. Height is capped to the cup
+              bottom (y=180) as a belt-and-braces guard against overflow. */}
+          {fill > 0.5 && (
+            <g clipPath="url(#pourclip)">
+              <rect
+                x="48"
+                y={fillY}
+                width="144"
+                height={Math.max(0, 180 - fillY)}
+                fill="var(--espresso)"
+              />
+              <rect x="48" y={fillY} width="144" height="6" fill="var(--crema)" />
+            </g>
+          )}
 
           {/* handle */}
           <path
