@@ -22,6 +22,11 @@ interface VerdictRequest {
   reviewers: { him: string; her: string };
 }
 
+/** Coerce to a trimmed string, capped in length; "" if it wasn't a string. */
+function str(value: unknown, max: number): string {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
 export async function POST(request: Request) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
@@ -31,33 +36,54 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: VerdictRequest;
+  let body: Partial<VerdictRequest>;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Bad request." }, { status: 400 });
   }
 
-  const { name, area, scores, items, reviewers } = body;
+  // This route is public, so validate the shape rather than trusting it —
+  // a malformed field must give a 400, not a crash, and the length caps keep
+  // junk payloads from inflating the prompt.
+  const name = str(body.name, 120);
+  const area = str(body.area, 120);
+  const scores =
+    body.scores && typeof body.scores === "object" && !Array.isArray(body.scores)
+      ? body.scores
+      : null;
   if (!name || !scores) {
     return NextResponse.json(
       { error: "Missing café details." },
       { status: 400 },
     );
   }
+  const reviewers = {
+    him: str(body.reviewers?.him, 40) || "Him",
+    her: str(body.reviewers?.her, 40) || "Her",
+  };
+  const items = (Array.isArray(body.items) ? body.items : [])
+    .slice(0, 20)
+    .map((it) => ({
+      name: str(it?.name, 80),
+      who: str(it?.who, 10),
+      rating: Number(it?.rating) || 0,
+      star: Boolean(it?.star),
+    }))
+    .filter((it) => it.name);
 
   const scoreLine = Object.entries(scores)
-    .map(([k, v]) => `${k} ${v}/5`)
+    .slice(0, 10)
+    .map(([k, v]) => `${k.slice(0, 30)} ${Number(v) || 0}/5`)
     .join(", ");
-  const itemLine =
-    items && items.length
-      ? items
-          .map(
-            (it) =>
-              `${it.name} (${it.who === "him" ? reviewers.him : it.who === "her" ? reviewers.her : "shared"}, ${it.rating}/5${it.star ? ", standout" : ""})`,
-          )
-          .join("; ")
-      : "no specific items noted";
+  const itemLine = items.length
+    ? items
+        .map(
+          (it) =>
+            `${it.name} (${it.who === "him" ? reviewers.him : it.who === "her" ? reviewers.her : "shared"}, ${it.rating}/5${it.star ? ", standout" : ""})`,
+        )
+        .join("; ")
+    : "no specific items noted";
 
   const prompt = `You write short, punchy café reviews for a Manchester coffee blog called "Bean There", run by a couple (${reviewers.him} and ${reviewers.her}) who score cafés together.
 

@@ -12,7 +12,7 @@ export default function ScorePills({ scores }: { scores: Scores }) {
         >
           {cat}
           <b className="ml-1.5 font-display font-extrabold text-ink">
-            {scores[cat].toFixed(1)}
+            {(scores[cat] ?? 0).toFixed(1)}
           </b>
         </span>
       ))}

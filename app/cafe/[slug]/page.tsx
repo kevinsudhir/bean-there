@@ -10,6 +10,20 @@ import EditCafeLink from "@/components/EditCafeLink";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+/** Per-café page title, so shares/bookmarks name the café instead of the site. */
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}) {
+  const cafe = await getCafeBySlug(params.slug);
+  if (!cafe) return { title: "Not found — Bean There" };
+  return {
+    title: `${cafe.name} — Bean There`,
+    description: cafe.verdict || undefined,
+  };
+}
+
 const whoLabel: Record<Who, string> = {
   him: SITE.reviewers.him,
   her: SITE.reviewers.her,

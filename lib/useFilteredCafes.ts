@@ -14,8 +14,10 @@ export function useFilteredCafes(
   return useMemo(() => {
     let list = cafes.slice();
 
-    if (state.q) {
-      const q = state.q.toLowerCase();
+    // Trim so a trailing space (easy on mobile keyboards) doesn't hide matches.
+    const query = state.q.trim().toLowerCase();
+    if (query) {
+      const q = query;
       list = list.filter(
         (c) =>
           c.name.toLowerCase().includes(q) ||

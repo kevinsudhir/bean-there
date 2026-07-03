@@ -15,6 +15,9 @@ node_modules
 .env.local
 .env*.local
 
+# typescript incremental build cache
+tsconfig.tsbuildinfo
+
 # misc
 .DS_Store
 *.log

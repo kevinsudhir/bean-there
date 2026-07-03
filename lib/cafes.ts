@@ -37,18 +37,35 @@ export async function getCafeBySlug(slug: string): Promise<Cafe | null> {
     return SAMPLE_CAFES.find((c) => c.slug === slug) ?? null;
   }
 
+  // limit(1) + maybeSingle: unlike .single(), this doesn't error out (and 404
+  // the page) if duplicate slugs ever sneak into the table.
   const { data, error } = await supabase
     .from("cafes")
     .select("*")
     .eq("slug", slug)
-    .single();
+    .limit(1)
+    .maybeSingle();
 
-  if (error) return null;
-  return data as Cafe;
+  if (error) {
+    console.error("Failed to load cafe by slug:", error.message);
+    return null;
+  }
+  return (data as Cafe) ?? null;
 }
 
 /** Payload for creating a cafe (id/slug are derived server-side). */
 export type NewCafe = Omit<Cafe, "id" | "slug"> & { slug?: string };
+
+/**
+ * Derive a cafe's slug. A name with no ASCII letters/numbers (e.g. all emoji
+ * or accented script) would slugify to "", which breaks the /cafe/[slug] URL —
+ * fall back to a short random handle instead.
+ */
+function deriveSlug(input: NewCafe): string {
+  return (
+    input.slug ?? (toSlug(input.name) || `cafe-${crypto.randomUUID().slice(0, 8)}`)
+  );
+}
 
 /** Insert a new cafe. Requires Supabase to be configured. */
 export async function createCafe(input: NewCafe): Promise<Cafe> {
@@ -58,7 +75,7 @@ export async function createCafe(input: NewCafe): Promise<Cafe> {
     );
   }
 
-  const slug = input.slug ?? toSlug(input.name);
+  const slug = deriveSlug(input);
   const { data, error } = await supabase
     .from("cafes")
     .insert({ ...input, slug })
@@ -79,10 +96,14 @@ export async function getCafeById(id: string): Promise<Cafe | null> {
     .from("cafes")
     .select("*")
     .eq("id", id)
-    .single();
+    .limit(1)
+    .maybeSingle();
 
-  if (error) return null;
-  return data as Cafe;
+  if (error) {
+    console.error("Failed to load cafe by id:", error.message);
+    return null;
+  }
+  return (data as Cafe) ?? null;
 }
 
 /** Update an existing cafe. Slug is re-derived from the (possibly new) name. */
@@ -94,7 +115,7 @@ export async function updateCafe(
     throw new Error("Supabase isn't configured.");
   }
 
-  const slug = input.slug ?? toSlug(input.name);
+  const slug = deriveSlug(input);
   const { data, error } = await supabase
     .from("cafes")
     .update({ ...input, slug })

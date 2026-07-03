@@ -22,6 +22,13 @@ create index if not exists cafes_date_idx on public.cafes (date desc);
 -- 2) Row Level Security.
 --    Reads are public (anyone can view the site). Writes (adding cafes) require
 --    an authenticated user, so only you and your wife — once logged in — can add.
+--
+--    IMPORTANT: "authenticated" means ANY signed-in user, so this is only safe
+--    when new sign-ups are impossible. The login page passes
+--    shouldCreateUser: false, and you should also disable sign-ups in
+--    Dashboard → Authentication → Providers → Email. For belt-and-braces,
+--    replace the write policies with an email allowlist, e.g.:
+--      with check ((auth.jwt() ->> 'email') in ('you@example.com', 'her@example.com'))
 alter table public.cafes enable row level security;
 
 create policy "Public can read cafes"

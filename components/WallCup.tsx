@@ -26,7 +26,10 @@ export default function WallCup({
   const yTop = 94;
   const yBot = 214;
   const yF = yBot - (yBot - yTop) * f;
-  const id = Math.random().toString(36).slice(2, 8);
+  // Static clip id: every cup clips to the same shape, so instances sharing it
+  // is harmless — and unlike a random id it's identical on server and client,
+  // avoiding hydration mismatches and id churn on re-renders.
+  const id = compact ? "wallcup-c" : "wallcup";
 
   // Compact crops tightly around the cup (which lives roughly x:140–370,
   // y:80–220 in the full art) and omits saucer/steam/hover.

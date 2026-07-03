@@ -37,6 +37,11 @@ const emptyItem = (): CafeItem => ({
   star: false,
 });
 
+// min/max on a number input only constrain the spinner, not typed values, so
+// every score/rating is clamped to 0–5 (and NaN from a cleared field becomes 0).
+const clampScore = (n: number): number =>
+  Number.isFinite(n) ? Math.min(5, Math.max(0, Math.round(n * 10) / 10)) : 0;
+
 const label = "mb-1.5 block font-mono text-xs uppercase tracking-wide text-dim";
 const field =
   "w-full min-w-0 max-w-full rounded-lg border-[1.5px] border-line bg-transparent px-3 py-2.5 text-sm text-ink outline-none focus:border-ink";
@@ -83,7 +88,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
   const loved = overall >= SITE.badgeThreshold;
 
   const setScore = (cat: keyof Scores, value: number) =>
-    setScores((s) => ({ ...s, [cat]: Math.round(value * 10) / 10 }));
+    setScores((s) => ({ ...s, [cat]: clampScore(value) }));
   const setItem = (i: number, patch: Partial<CafeItem>) =>
     setItems((list) => list.map((it, j) => (j === i ? { ...it, ...patch } : it)));
   const addItem = () => setItems((list) => [...list, emptyItem()]);
@@ -154,6 +159,12 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
     setError(null);
     if (!name.trim() || !area.trim()) {
       setError("Café name and area are required.");
+      return;
+    }
+    // The date input can be cleared, and an empty date would render as "—"
+    // on the wall and break date sorting.
+    if (!date) {
+      setError("Add the date you visited.");
       return;
     }
     setSaving(true);
@@ -382,9 +393,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
                   className={`${field} sm:w-20`}
                   value={it.rating}
                   onChange={(e) =>
-                    setItem(i, {
-                      rating: Math.round(Number(e.target.value) * 10) / 10,
-                    })
+                    setItem(i, { rating: clampScore(Number(e.target.value)) })
                   }
                 />
                 <input
@@ -398,7 +407,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
                       price:
                         e.target.value === ""
                           ? undefined
-                          : Number(e.target.value),
+                          : Math.max(0, Number(e.target.value) || 0),
                     })
                   }
                   placeholder="£ price"

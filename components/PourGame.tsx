@@ -10,10 +10,16 @@ import { useEffect, useRef, useState } from "react";
 export default function PourGame() {
   const [fill, setFill] = useState(0); // 0–100, current coffee level
   const [pouring, setPouring] = useState(false);
-  const [target, setTarget] = useState(() => 55 + Math.random() * 35); // 55–90
+  // Fixed initial target so the server render matches hydration (Math.random
+  // in the initializer differs between the two); randomised on mount below.
+  const [target, setTarget] = useState(72.5); // 55–90 once randomised
   const [result, setResult] = useState<number | null>(null); // score 0–100
   const [best, setBest] = useState(0);
   const raf = useRef<number | null>(null);
+
+  useEffect(() => {
+    setTarget(55 + Math.random() * 35);
+  }, []);
 
   useEffect(() => {
     if (!pouring) return;

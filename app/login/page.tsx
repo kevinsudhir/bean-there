@@ -25,7 +25,13 @@ export default function LoginPage() {
     setStatus("sending");
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: `${window.location.origin}/` },
+      options: {
+        emailRedirectTo: `${window.location.origin}/`,
+        // Only accounts that already exist (created in the Supabase dashboard)
+        // may sign in. Without this, anyone could sign themselves up here and
+        // the "authenticated can write" RLS policy would let them edit cafés.
+        shouldCreateUser: false,
+      },
     });
     if (error) {
       setStatus("error");

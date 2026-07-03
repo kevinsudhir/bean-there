@@ -21,9 +21,15 @@ export const SITE = {
   badgeLabel: "Bean There, Loved That",
 } as const;
 
-/** Average of the five category scores, rounded to one decimal. */
+/**
+ * Average of the five category scores, rounded to one decimal. Tolerates rows
+ * whose JSON is missing a category (treated as 0) rather than returning NaN.
+ */
 export function overallScore(scores: Scores): number {
-  const total = SCORE_CATEGORIES.reduce((sum, cat) => sum + scores[cat], 0);
+  const total = SCORE_CATEGORIES.reduce(
+    (sum, cat) => sum + (scores[cat] ?? 0),
+    0,
+  );
   return Math.round((total / SCORE_CATEGORIES.length) * 10) / 10;
 }
 
@@ -41,9 +47,11 @@ export function toSlug(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-/** Format an ISO date as e.g. "June 2026". */
+/** Format an ISO date as e.g. "June 2026". Invalid/empty dates render as "—". */
 export function formatVisitDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-GB", {
     month: "long",
     year: "numeric",
   });
