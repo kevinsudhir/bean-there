@@ -6,13 +6,11 @@ import ReviewContent from "./ReviewContent";
 
 /**
  * MOBILE container for a review: a bottom sheet sliding up from the bottom.
- * Dismiss by: the ✕ button, tapping the backdrop, Escape, or swiping the sheet
- * down past a threshold (the sheet follows your finger, then either closes or
- * snaps back).
- *
- * Animation uses a `shown` flag: mount → next frame set shown=true → CSS
- * transitions it up. On close, shown=false slides it out, then after the
- * transition we unmount via onClose.
+ * Dismiss by: the ✕ button, tapping the backdrop, Escape, or dragging the
+ * sheet down. The drag works ANYWHERE on the sheet — if the content is
+ * scrolled to the top and you pull down, the whole sheet follows your finger
+ * and dismisses past a threshold (snapping back otherwise). If the content
+ * isn't at the top, your touch scrolls the content as normal.
  */
 export default function ReviewSheet({
   cafe,
@@ -22,8 +20,9 @@ export default function ReviewSheet({
   onClose: () => void;
 }) {
   const [shown, setShown] = useState(false);
-  const [dragY, setDragY] = useState(0); // px the sheet is dragged down
+  const [dragY, setDragY] = useState(0);
   const startY = useRef<number | null>(null);
+  const dragging = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,55 +49,68 @@ export default function ReviewSheet({
     setTimeout(onClose, 280);
   }
 
-  // --- swipe-to-dismiss ---
-  // Only start a drag when the content is scrolled to the top, so dragging
-  // down doesn't fight with scrolling the review.
+  // Record the touch start position. We only allow a dismiss-drag to begin
+  // when the scroll area is already at the very top.
   function onTouchStart(e: React.TouchEvent) {
-    const atTop = (scrollRef.current?.scrollTop ?? 0) <= 0;
-    startY.current = atTop ? e.touches[0].clientY : null;
+    startY.current = e.touches[0].clientY;
+    dragging.current = false;
   }
+
   function onTouchMove(e: React.TouchEvent) {
     if (startY.current === null) return;
     const delta = e.touches[0].clientY - startY.current;
-    if (delta > 0) setDragY(delta); // only downward
+    const atTop = (scrollRef.current?.scrollTop ?? 0) <= 0;
+
+    // Begin a dismiss-drag only when pulling down from the top of the content.
+    if (!dragging.current && delta > 4 && atTop) {
+      dragging.current = true;
+    }
+
+    if (dragging.current && delta > 0) {
+      // Prevent the content from scrolling while we're dragging the sheet.
+      e.preventDefault();
+      setDragY(delta);
+    }
   }
+
   function onTouchEnd() {
-    if (dragY > 110) {
-      close(); // dragged far enough → dismiss
-    } else {
-      setDragY(0); // snap back
+    if (dragging.current) {
+      if (dragY > 120) close();
+      else setDragY(0); // snap back
     }
     startY.current = null;
+    dragging.current = false;
   }
 
   if (!cafe) return null;
 
-  const dragging = dragY > 0;
+  const isDragging = dragY > 0;
+  // Backdrop fades a little as you drag the sheet away.
+  const backdropOpacity = shown ? Math.max(0.15, 1 - dragY / 500) : 0;
 
   return (
     <div className="fixed inset-0 z-[100]">
       {/* Backdrop */}
       <div
         onClick={close}
-        className={`absolute inset-0 bg-[rgba(20,14,7,0.5)] transition-opacity duration-300 ${shown ? "opacity-100" : "opacity-0"}`}
+        style={{ opacity: backdropOpacity }}
+        className="absolute inset-0 bg-[rgba(20,14,7,0.5)] transition-opacity duration-300"
       />
 
-      {/* Sheet */}
+      {/* Sheet — the whole thing is draggable */}
       <div
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
         style={
-          dragging
+          isDragging
             ? { transform: `translateY(${dragY}px)`, transition: "none" }
             : undefined
         }
-        className={`absolute inset-x-0 bottom-0 max-h-[92%] overflow-hidden rounded-t-[26px] bg-bg transition-transform duration-300 ${shown ? "translate-y-0" : "translate-y-full"}`}
+        className={`absolute inset-x-0 bottom-0 max-h-[92%] touch-pan-y overflow-hidden rounded-t-[26px] bg-bg transition-transform duration-300 ${shown ? "translate-y-0" : "translate-y-full"}`}
       >
         {/* Drag handle + close button */}
-        <div
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-          className="sticky top-0 z-10 flex items-center justify-center bg-bg pb-1 pt-3"
-        >
+        <div className="sticky top-0 z-10 flex items-center justify-center bg-bg pb-1 pt-3">
           <span className="h-1.5 w-11 rounded-full bg-line" />
           <button
             onClick={close}
