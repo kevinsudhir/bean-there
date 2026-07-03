@@ -50,14 +50,13 @@ export function toSlug(name: string): string {
 }
 
 /**
- * Google Maps link for a cafe: exact coordinates when the cafe has a pin,
- * otherwise a name + area + city search (good enough for a named café).
+ * Google Maps link for a cafe. Always searches by name + area + city: that
+ * opens the café's real Maps listing (reviews, hours, photos), whereas raw
+ * coordinates open an anonymous dropped pin. The stored lat/lng are used
+ * only for our own map view's pins.
  */
 export function mapsSearchUrl(cafe: Cafe): string {
-  const query =
-    typeof cafe.lat === "number" && typeof cafe.lng === "number"
-      ? `${cafe.lat},${cafe.lng}`
-      : `${cafe.name} ${cafe.area} ${SITE.city}`;
+  const query = `${cafe.name} ${cafe.area} ${SITE.city}`;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
