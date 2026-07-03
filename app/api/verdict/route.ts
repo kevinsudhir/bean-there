@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { supabase } from "@/lib/supabase";
 
 /**
  * Server-side route that drafts a café verdict with the Gemini API.
@@ -27,12 +28,34 @@ function str(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
+/**
+ * Only logged-in users may draft verdicts — the route calls a paid/quota'd
+ * API, so leaving it open lets anyone on the internet burn the Gemini quota.
+ * The form sends the Supabase access token; we verify it server-side.
+ * In local/demo mode (no Supabase) there are no accounts, so it stays open.
+ */
+async function isAuthorized(request: Request): Promise<boolean> {
+  if (!supabase) return true;
+  const header = request.headers.get("authorization");
+  const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
+  if (!token) return false;
+  const { data, error } = await supabase.auth.getUser(token);
+  return !error && Boolean(data.user);
+}
+
 export async function POST(request: Request) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
     return NextResponse.json(
       { error: "The verdict feature isn't configured (no API key)." },
       { status: 503 },
+    );
+  }
+
+  if (!(await isAuthorized(request))) {
+    return NextResponse.json(
+      { error: "Sign in to draft a verdict." },
+      { status: 401 },
     );
   }
 

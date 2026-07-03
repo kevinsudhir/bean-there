@@ -9,7 +9,7 @@ import { createCafe, updateCafe, deleteCafe } from "@/lib/cafes";
 import { revalidateCafes } from "@/lib/actions";
 import { toSlug } from "@/lib/config";
 import { uploadPhoto } from "@/lib/upload";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 
 const ITEM_TYPES: ItemType[] = [
   "mocha",
@@ -134,9 +134,17 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
     }
     setDrafting(true);
     try {
+      // The verdict route requires a logged-in user (it spends Gemini quota),
+      // so pass the Supabase access token for it to verify.
+      const token = supabase
+        ? (await supabase.auth.getSession()).data.session?.access_token
+        : undefined;
       const res = await fetch("/api/verdict", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           name: name.trim(),
           area: area.trim(),
