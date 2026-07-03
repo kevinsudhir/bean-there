@@ -281,7 +281,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
             {items.map((it, i) => (
               <div
                 key={i}
-                className="grid grid-cols-1 gap-2 rounded-lg border-[1.5px] border-line p-3 [&>*]:min-w-0 sm:grid-cols-[1fr_1fr_auto_auto_auto] sm:items-center"
+                className="grid grid-cols-1 gap-2 rounded-lg border-[1.5px] border-line p-3 [&>*]:min-w-0 sm:grid-cols-[1fr_1fr_auto_auto_auto_auto] sm:items-center"
               >
                 <input
                   className={field}
@@ -323,6 +323,23 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
                   onChange={(e) =>
                     setItem(i, { rating: Number(e.target.value) })
                   }
+                />
+                <input
+                  type="number"
+                  min={0}
+                  step={0.1}
+                  className={`${field} sm:w-24`}
+                  value={it.price ?? ""}
+                  onChange={(e) =>
+                    setItem(i, {
+                      price:
+                        e.target.value === ""
+                          ? undefined
+                          : Number(e.target.value),
+                    })
+                  }
+                  placeholder="£ price"
+                  aria-label="Price in pounds"
                 />
                 <div className="flex items-center gap-2">
                   <button

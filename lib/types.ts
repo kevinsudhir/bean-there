@@ -42,6 +42,8 @@ export interface CafeItem {
   rating: number;
   /** Marks the standout item of the visit. */
   star?: boolean;
+  /** Optional price in GBP, e.g. 3.8 for £3.80. */
+  price?: number;
 }
 
 /** A full cafe review. */

@@ -70,12 +70,28 @@ export default function MobileControls({
           </button>
         </div>
 
-        {/* More toggle */}
+        {/* Filter toggle (opens the Sort/Area/Theme panel) */}
         <button
           onClick={() => setMoreOpen((o) => !o)}
-          className={`rounded-pill border-[1.5px] px-3 py-2.5 font-mono text-[9px] uppercase tracking-wide ${moreOpen ? "border-ink bg-ink text-bg" : "border-line text-ink"}`}
+          aria-label="Filters"
+          aria-expanded={moreOpen}
+          className={`flex h-10 w-11 flex-none items-center justify-center rounded-pill border-[1.5px] ${moreOpen ? "border-ink bg-ink text-bg" : "border-line text-ink"}`}
         >
-          More {moreOpen ? "▴" : "▾"}
+          <svg
+            viewBox="0 0 24 24"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          >
+            <line x1="4" y1="7" x2="20" y2="7" />
+            <line x1="4" y1="12" x2="20" y2="12" />
+            <line x1="4" y1="17" x2="20" y2="17" />
+            <circle cx="9" cy="7" r="2.4" fill="var(--bg)" />
+            <circle cx="15" cy="12" r="2.4" fill="var(--bg)" />
+            <circle cx="8" cy="17" r="2.4" fill="var(--bg)" />
+          </svg>
         </button>
 
         {/* List / gallery view toggle (single button that flips) */}

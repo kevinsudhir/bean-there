@@ -3,6 +3,7 @@
 import Controls from "./Controls";
 import CafeCard from "./CafeCard";
 import ReviewModal from "./ReviewModal";
+import WallEmpty from "./WallEmpty";
 import type { WallViewProps } from "./Wall";
 
 /**
@@ -12,6 +13,7 @@ import type { WallViewProps } from "./Wall";
  */
 export default function DesktopWall({
   cafes,
+  totalCafes,
   areas,
   filters,
   onFilters,
@@ -19,6 +21,9 @@ export default function DesktopWall({
   onOpen,
   onClose,
 }: WallViewProps) {
+  // No cafés at all → the friendly interactive empty state (no controls).
+  if (totalCafes === 0) return <WallEmpty />;
+
   return (
     <>
       <Controls state={filters} onChange={onFilters} areas={areas} />

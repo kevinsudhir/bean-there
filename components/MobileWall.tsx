@@ -5,6 +5,7 @@ import CafeCard from "./CafeCard";
 import CafeListRow from "./CafeListRow";
 import MobileControls, { type MobileView } from "./MobileControls";
 import ReviewSheet from "./ReviewSheet";
+import WallEmpty from "./WallEmpty";
 import type { WallViewProps } from "./Wall";
 
 /**
@@ -16,6 +17,7 @@ import type { WallViewProps } from "./Wall";
  */
 export default function MobileWall({
   cafes,
+  totalCafes,
   areas,
   filters,
   onFilters,
@@ -24,6 +26,9 @@ export default function MobileWall({
   onClose,
 }: WallViewProps) {
   const [view, setView] = useState<MobileView>("list");
+
+  // No cafés at all → the friendly interactive empty state (no controls).
+  if (totalCafes === 0) return <WallEmpty />;
 
   return (
     <>

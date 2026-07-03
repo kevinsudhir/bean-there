@@ -120,3 +120,15 @@ body {
     opacity: 0.55;
   }
 }
+
+/* Loading: the cup gently bobs up and down. Used on the wall while data loads. */
+@keyframes cup-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.cup-bob {
+  animation: cup-bob 1.1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cup-bob { animation: none; }
+}

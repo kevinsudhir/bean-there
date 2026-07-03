@@ -14,6 +14,7 @@ import { toSlug } from "./config";
 
 /** Fetch all cafes, newest visit first. */
 export async function getCafes(): Promise<Cafe[]> {
+  // No Supabase configured → local/demo mode, use bundled samples.
   if (!supabase) return SAMPLE_CAFES;
 
   const { data, error } = await supabase
@@ -21,9 +22,11 @@ export async function getCafes(): Promise<Cafe[]> {
     .select("*")
     .order("date", { ascending: false });
 
+  // A real database error is different from "no cafés yet". We throw so the
+  // page can show an honest error state instead of silently faking data.
   if (error) {
     console.error("Failed to load cafes:", error.message);
-    return SAMPLE_CAFES;
+    throw new Error("Could not load cafés from the database.");
   }
   return (data ?? []) as Cafe[];
 }

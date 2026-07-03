@@ -36,6 +36,7 @@ export default function Wall({ cafes }: { cafes: Cafe[] }) {
   // Props shared by both layouts.
   const viewProps = {
     cafes: visible,
+    totalCafes: cafes.length,
     areas,
     filters,
     onFilters: setFilters,
@@ -59,6 +60,7 @@ export default function Wall({ cafes }: { cafes: Cafe[] }) {
 /** The shared prop shape both layouts receive. Exported so each view imports it. */
 export interface WallViewProps {
   cafes: Cafe[];
+  totalCafes: number;
   areas: string[];
   filters: FilterState;
   onFilters: (next: FilterState) => void;

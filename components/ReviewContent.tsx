@@ -86,6 +86,11 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
             </div>
             <div className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-dim">
               {whoLabel[item.who]}
+              {typeof item.price === "number" && (
+                <span className="ml-1.5 text-amber">
+                  £{item.price.toFixed(2)}
+                </span>
+              )}
             </div>
             <div className="font-display text-[clamp(22px,2.4vw,32px)] font-extrabold">
               {item.rating.toFixed(1)}
