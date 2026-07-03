@@ -101,7 +101,7 @@ export default async function CafePage({
               key={i}
               src={src}
               alt={`${cafe.name} photo ${i + 1}`}
-              className="h-[180px] w-[260px] flex-none snap-start rounded-xl border-[1.5px] border-line object-cover"
+              className="h-[280px] w-[210px] flex-none snap-start rounded-xl border-[1.5px] border-line object-cover"
             />
           ))}
         </div>

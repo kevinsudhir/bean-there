@@ -17,7 +17,7 @@ export default function PhotoStrip({
           key={i}
           onClick={() => onOpen(src)}
           aria-label={`Enlarge photo ${i + 1}`}
-          className="h-[112px] w-[170px] flex-none snap-start rounded-xl border-[1.5px] border-line bg-cover bg-center transition-transform hover:scale-[1.02]"
+          className="h-[168px] w-[126px] flex-none snap-start rounded-xl border-[1.5px] border-line bg-cover bg-center transition-transform hover:scale-[1.02]"
           style={{ backgroundImage: `url('${src}')` }}
         />
       ))}
