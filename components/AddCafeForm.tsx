@@ -63,6 +63,8 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
     existing?.items?.length ? existing.items : [emptyItem()],
   );
   const [verdict, setVerdict] = useState(existing?.verdict ?? "");
+  const [drafting, setDrafting] = useState(false);
+  const [draftError, setDraftError] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -78,6 +80,35 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
   const addItem = () => setItems((list) => [...list, emptyItem()]);
   const removeItem = (i: number) =>
     setItems((list) => list.filter((_, j) => j !== i));
+
+  async function draftVerdict() {
+    setDraftError(null);
+    if (!name.trim()) {
+      setDraftError("Add the café name first.");
+      return;
+    }
+    setDrafting(true);
+    try {
+      const res = await fetch("/api/verdict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          area: area.trim(),
+          scores,
+          items: items.filter((it) => it.name.trim()),
+          reviewers: SITE.reviewers,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Couldn't draft a verdict.");
+      setVerdict(data.verdict);
+    } catch (e) {
+      setDraftError(e instanceof Error ? e.message : "Couldn't draft a verdict.");
+    } finally {
+      setDrafting(false);
+    }
+  }
 
   async function handleSubmit() {
     setError(null);
@@ -313,13 +344,29 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
         </div>
 
         <div>
-          <label className={label}>Verdict</label>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className={`${label} mb-0`}>Verdict</label>
+            <button
+              type="button"
+              onClick={draftVerdict}
+              disabled={drafting}
+              className="rounded-pill border-[1.5px] border-amber px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-amber disabled:opacity-40"
+            >
+              {drafting ? "Drafting…" : "✨ Draft with AI"}
+            </button>
+          </div>
           <textarea
             className={`${field} min-h-[90px] font-voice italic`}
             value={verdict}
             onChange={(e) => setVerdict(e.target.value)}
             placeholder="A canalside bakery firing on all cylinders…"
           />
+          {draftError && (
+            <p className="mt-1.5 font-mono text-xs text-red-700">{draftError}</p>
+          )}
+          <p className="mt-1.5 font-mono text-[10px] italic text-dim">
+            AI draft — always read it over and make it yours before saving.
+          </p>
         </div>
 
         {error && (
