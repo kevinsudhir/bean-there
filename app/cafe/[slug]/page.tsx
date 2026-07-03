@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Who } from "@/lib/types";
-import { getCafeBySlug, getCafes } from "@/lib/cafes";
+import { getCafeBySlug } from "@/lib/cafes";
 import { overallScore, isLoved, formatVisitDate, SITE } from "@/lib/config";
 import CupIcon from "@/components/CupIcon";
 import ScorePills from "@/components/ScorePills";
@@ -112,10 +112,4 @@ export default async function CafePage({
       </div>
     </main>
   );
-}
-
-/** Pre-generate the known cafe pages at build time for speed. */
-export async function generateStaticParams() {
-  const cafes = await getCafes();
-  return cafes.map((c) => ({ slug: c.slug }));
 }

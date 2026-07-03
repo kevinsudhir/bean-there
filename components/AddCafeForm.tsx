@@ -6,6 +6,8 @@ import type { Cafe, CafeItem, ItemType, Scores, Who } from "@/lib/types";
 import { SCORE_CATEGORIES } from "@/lib/types";
 import { overallScore, SITE } from "@/lib/config";
 import { createCafe, updateCafe, deleteCafe } from "@/lib/cafes";
+import { revalidateCafes } from "@/lib/actions";
+import { toSlug } from "@/lib/config";
 import { uploadPhoto } from "@/lib/upload";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
@@ -138,8 +140,9 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
         await createCafe(payload);
       }
 
-      // Invalidate the cached wall data first, then navigate so the change
-      // is reflected when the home page re-renders.
+      // Clear the server-side cached render of the wall and this café's page,
+      // then refresh + navigate, so the change shows immediately.
+      await revalidateCafes(toSlug(payload.name));
       router.refresh();
       router.push("/");
     } catch (e) {
@@ -160,6 +163,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
     setError(null);
     try {
       await deleteCafe(existing.id);
+      await revalidateCafes(existing.slug);
       router.refresh();
       router.push("/");
     } catch (e) {

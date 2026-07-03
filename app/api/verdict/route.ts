@@ -76,7 +76,14 @@ What they had: ${itemLine}`;
       },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.9, maxOutputTokens: 300 },
+        generationConfig: {
+          temperature: 0.9,
+          maxOutputTokens: 800,
+          // gemini-2.5-flash is a "thinking" model and reasoning tokens count
+          // against the output budget, which was truncating the verdict.
+          // A short verdict needs no thinking, so we switch it off.
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       }),
     });
 
@@ -90,8 +97,13 @@ What they had: ${itemLine}`;
     }
 
     const data = await res.json();
-    const text: string | undefined =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const parts = data?.candidates?.[0]?.content?.parts;
+    const text: string | undefined = Array.isArray(parts)
+      ? parts
+          .map((p: { text?: string }) => p.text ?? "")
+          .join("")
+          .trim() || undefined
+      : undefined;
 
     if (!text) {
       return NextResponse.json(
