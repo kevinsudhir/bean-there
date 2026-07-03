@@ -2,7 +2,13 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Who } from "@/lib/types";
 import { getCafeBySlug } from "@/lib/cafes";
-import { overallScore, isLoved, formatVisitDate, SITE } from "@/lib/config";
+import {
+  overallScore,
+  isLoved,
+  formatVisitDate,
+  mapsSearchUrl,
+  SITE,
+} from "@/lib/config";
 import CupIcon from "@/components/CupIcon";
 import ScorePills from "@/components/ScorePills";
 import EditCafeLink from "@/components/EditCafeLink";
@@ -21,6 +27,13 @@ export async function generateMetadata({
   return {
     title: `${cafe.name} — Bean There`,
     description: cafe.verdict || undefined,
+    openGraph: {
+      title: `${cafe.name} — Bean There`,
+      description: cafe.verdict || undefined,
+      // First review photo as the share card, when there is one; otherwise
+      // the site-wide opengraph-image is used automatically.
+      images: cafe.photos.length > 0 ? [cafe.photos[0]] : undefined,
+    },
   };
 }
 
@@ -63,8 +76,29 @@ export default async function CafePage({
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-6">
-        <h1 className="font-display text-[clamp(42px,6vw,78px)] font-extrabold leading-[0.86] tracking-tight">
+        <h1 className="flex items-center gap-3 font-display text-[clamp(42px,6vw,78px)] font-extrabold leading-[0.86] tracking-tight">
           {cafe.name}
+          <a
+            href={mapsSearchUrl(cafe)}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Open ${cafe.name} in Google Maps`}
+            title="Open in Google Maps"
+            className="text-amber transition-transform hover:scale-110"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-[0.45em] w-[0.45em]"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 21c-4.5-4.5-7-8-7-11a7 7 0 1 1 14 0c0 3-2.5 6.5-7 11z" />
+              <circle cx="12" cy="10" r="2.5" />
+            </svg>
+          </a>
         </h1>
         <div
           className={`flex h-24 w-24 flex-none flex-col items-center justify-center rounded-full border-[3px] border-amber ${loved ? "bg-amber" : ""}`}

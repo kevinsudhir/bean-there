@@ -18,15 +18,21 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: "name", label: "A–Z" },
 ];
 
-/** The desktop controls row: search, sort, area, the Loved badge, theme. */
+export type DesktopView = "grid" | "map";
+
+/** The desktop controls row: search, sort, area, the Loved badge, view, theme. */
 export default function Controls({
   state,
   onChange,
   areas,
+  view,
+  onView,
 }: {
   state: FilterState;
   onChange: (next: FilterState) => void;
   areas: string[];
+  view: DesktopView;
+  onView: (v: DesktopView) => void;
 }) {
   const set = (patch: Partial<FilterState>) => onChange({ ...state, ...patch });
 
@@ -90,6 +96,15 @@ export default function Controls({
       >
         ★ {SITE.badgeLabel}
       </button>
+
+      <div className="flex h-11 items-center gap-2 rounded-pill border-[1.5px] border-line px-2">
+        <button onClick={() => onView("grid")} className={chip(view === "grid")}>
+          Grid
+        </button>
+        <button onClick={() => onView("map")} className={chip(view === "map")}>
+          Map
+        </button>
+      </div>
 
       <span className="flex-1" />
       <ThemeToggle />

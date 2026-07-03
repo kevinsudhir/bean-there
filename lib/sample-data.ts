@@ -21,6 +21,8 @@ export const SAMPLE_CAFES: Cafe[] = [
       { type: "bake", name: "Brownie", who: "shared", rating: 5, star: true },
     ],
     photos: [],
+    lat: 53.4831,
+    lng: -2.2323,
   },
   {
     id: "sample-2",
@@ -37,6 +39,8 @@ export const SAMPLE_CAFES: Cafe[] = [
       { type: "bake", name: "Cardamom bun", who: "shared", rating: 3.5 },
     ],
     photos: [],
+    lat: 53.4816,
+    lng: -2.2312,
   },
   {
     id: "sample-3",
@@ -60,6 +64,8 @@ export const SAMPLE_CAFES: Cafe[] = [
       { type: "dessert", name: "Cruffin", who: "shared", rating: 4.5 },
     ],
     photos: [],
+    lat: 53.4842,
+    lng: -2.2226,
   },
   {
     id: "sample-4",
@@ -75,5 +81,7 @@ export const SAMPLE_CAFES: Cafe[] = [
       { type: "cappuccino", name: "Cappuccino", who: "her", rating: 4 },
     ],
     photos: [],
+    lat: 53.4823,
+    lng: -2.2331,
   },
 ];

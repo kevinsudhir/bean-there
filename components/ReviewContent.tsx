@@ -3,7 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Cafe, Who } from "@/lib/types";
-import { overallScore, isLoved, formatVisitDate, SITE } from "@/lib/config";
+import {
+  overallScore,
+  isLoved,
+  formatVisitDate,
+  mapsSearchUrl,
+  SITE,
+} from "@/lib/config";
 import { useAuth } from "./AuthProvider";
 import CupIcon from "./CupIcon";
 import ScorePills from "./ScorePills";
@@ -25,10 +31,32 @@ const whoLabel: Record<Who, string> = {
  */
 export default function ReviewContent({ cafe }: { cafe: Cafe }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const { session } = useAuth();
 
   const overall = overallScore(cafe.scores);
   const loved = isLoved(cafe);
+
+  // Share the cafe's own page (the modal URL is just the wall). Native share
+  // sheet where available (phones), clipboard copy elsewhere.
+  async function share() {
+    const url = `${window.location.origin}/cafe/${cafe.slug}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `${cafe.name} — ${SITE.title}`, url });
+        return;
+      } catch {
+        return; // user dismissed the share sheet — not an error
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt("Copy this link:", url);
+    }
+  }
 
   return (
     <>
@@ -54,8 +82,29 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
       </div>
 
       <div className="flex w-full max-w-full flex-wrap items-center justify-center gap-4 sm:gap-8">
-        <h2 className="font-display text-[clamp(36px,4.6vw,64px)] font-extrabold leading-[0.86] tracking-tight">
+        <h2 className="flex items-center gap-2.5 font-display text-[clamp(36px,4.6vw,64px)] font-extrabold leading-[0.86] tracking-tight">
           {cafe.name}
+          <a
+            href={mapsSearchUrl(cafe)}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Open ${cafe.name} in Google Maps`}
+            title="Open in Google Maps"
+            className="text-amber transition-transform hover:scale-110"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-[0.45em] w-[0.45em]"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M12 21c-4.5-4.5-7-8-7-11a7 7 0 1 1 14 0c0 3-2.5 6.5-7 11z" />
+              <circle cx="12" cy="10" r="2.5" />
+            </svg>
+          </a>
         </h2>
         <div
           className={`flex h-[76px] w-[76px] flex-none flex-col items-center justify-center rounded-full border-[3px] border-amber sm:h-[clamp(80px,6.5vw,92px)] sm:w-[clamp(80px,6.5vw,92px)] ${loved ? "bg-amber" : ""}`}
@@ -112,14 +161,22 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
         <b className="text-amber">{SITE.reviewers.her}</b>
       </div>
 
-      {session && (
-        <Link
-          href={`/cafe/${cafe.slug}/edit`}
+      <div className="flex flex-wrap items-center justify-center gap-2.5">
+        <button
+          onClick={share}
           className="rounded-pill border-[1.5px] border-line px-4 py-2 font-mono text-[10px] uppercase tracking-wide text-ink hover:border-ink"
         >
-          Edit this café
-        </Link>
-      )}
+          {copied ? "Link copied ✓" : "Share"}
+        </button>
+        {session && (
+          <Link
+            href={`/cafe/${cafe.slug}/edit`}
+            className="rounded-pill border-[1.5px] border-line px-4 py-2 font-mono text-[10px] uppercase tracking-wide text-ink hover:border-ink"
+          >
+            Edit this café
+          </Link>
+        )}
+      </div>
 
       <Lightbox src={lightbox} onClose={() => setLightbox(null)} />
     </>

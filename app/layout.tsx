@@ -27,9 +27,22 @@ const voice = Newsreader({
 });
 
 export const metadata: Metadata = {
+  // Absolute base for Open Graph URLs. Set NEXT_PUBLIC_SITE_URL to the
+  // deployed domain (e.g. https://beanthere.example.com) in production.
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  ),
   title: "Bean There — Manchester coffee, rated",
   description:
     "Two people drinking their way round Manchester's cafés and scoring them so you don't have to gamble your flat white money.",
+  openGraph: {
+    siteName: "Bean There",
+    type: "website",
+    title: "Bean There — Manchester coffee, rated",
+    description:
+      "Two people drinking their way round Manchester's cafés and scoring them so you don't have to gamble your flat white money.",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 // Ensures mobile browsers render at device width instead of a zoomed-out

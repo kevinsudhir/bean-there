@@ -3,6 +3,7 @@
 import { useState } from "react";
 import CafeCard from "./CafeCard";
 import CafeListRow from "./CafeListRow";
+import CafeMap from "./CafeMap";
 import MobileControls, { type MobileView } from "./MobileControls";
 import ReviewSheet from "./ReviewSheet";
 import WallEmpty from "./WallEmpty";
@@ -45,6 +46,8 @@ export default function MobileWall({
           <p className="py-12 text-center font-voice text-lg italic text-dim">
             No cafés match — try a different search.
           </p>
+        ) : view === "map" ? (
+          <CafeMap cafes={cafes} onOpen={onOpen} />
         ) : view === "list" ? (
           <div className="flex flex-col gap-2.5">
             {cafes.map((cafe) => (

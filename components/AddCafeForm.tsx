@@ -79,7 +79,16 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
   const [verdict, setVerdict] = useState(existing?.verdict ?? "");
   const [drafting, setDrafting] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
+  // Existing photos are editable (removable) in edit mode; new files append.
+  const [existingPhotos, setExistingPhotos] = useState<string[]>(
+    existing?.photos ?? [],
+  );
   const [files, setFiles] = useState<File[]>([]);
+  // Optional map pin. Found via the geocoder button or typed in manually.
+  const [lat, setLat] = useState<number | null>(existing?.lat ?? null);
+  const [lng, setLng] = useState<number | null>(existing?.lng ?? null);
+  const [locating, setLocating] = useState(false);
+  const [locMessage, setLocMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -125,6 +134,39 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
     });
   const removeItem = (i: number) =>
     setItems((list) => list.filter((_, j) => j !== i));
+
+  // Look the café up on OpenStreetMap's free geocoder (Nominatim) by
+  // name + area + city. No API key; fine at our do-it-once-per-café volume.
+  async function findLocation() {
+    setLocMessage(null);
+    if (!name.trim()) {
+      setLocMessage("Add the café name first.");
+      return;
+    }
+    setLocating(true);
+    try {
+      const q = [name.trim(), area.trim(), SITE.city].filter(Boolean).join(", ");
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`,
+      );
+      if (!res.ok) throw new Error();
+      const results: { lat: string; lon: string; display_name: string }[] =
+        await res.json();
+      if (!results.length) {
+        setLocMessage(
+          "Couldn't find it — try tweaking the name/area, or paste coordinates below.",
+        );
+        return;
+      }
+      setLat(Math.round(Number(results[0].lat) * 1e6) / 1e6);
+      setLng(Math.round(Number(results[0].lon) * 1e6) / 1e6);
+      setLocMessage(`Pinned: ${results[0].display_name}`);
+    } catch {
+      setLocMessage("Lookup failed — paste coordinates below instead.");
+    } finally {
+      setLocating(false);
+    }
+  }
 
   async function draftVerdict() {
     setDraftError(null);
@@ -175,10 +217,14 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
       setError("Add the date you visited.");
       return;
     }
+    if ((lat === null) !== (lng === null)) {
+      setError("Location needs both latitude and longitude — or clear both.");
+      return;
+    }
     setSaving(true);
     try {
-      // Keep any existing photos (edit mode), then append newly chosen ones.
-      const photos: string[] = existing?.photos ? [...existing.photos] : [];
+      // Kept existing photos (edit mode, minus removed), plus newly chosen ones.
+      const photos: string[] = [...existingPhotos];
       for (const file of files) photos.push(await uploadPhoto(file));
 
       const payload = {
@@ -189,6 +235,10 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
         items: items.filter((it) => it.name.trim()),
         verdict: verdict.trim(),
         photos,
+        // Only send lat/lng when a pin is set (or being cleared on a café
+        // that had one) — a database that predates the map columns would
+        // otherwise reject every save.
+        ...(lat !== null || existing?.lat != null ? { lat, lng } : {}),
       };
 
       if (isEdit && existing) {
@@ -291,6 +341,82 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
               className={`${field} file:mr-3 file:rounded file:border-0 file:bg-ink file:px-3 file:py-1 file:text-bg`}
             />
           </div>
+        </div>
+
+        {existingPhotos.length > 0 && (
+          <div>
+            <label className={label}>Current photos (✕ to remove on save)</label>
+            <div className="flex flex-wrap gap-2.5">
+              {existingPhotos.map((src) => (
+                <div key={src} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={src}
+                    alt="Review photo"
+                    className="h-24 w-[72px] rounded-lg border-[1.5px] border-line object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExistingPhotos((list) => list.filter((p) => p !== src))
+                    }
+                    aria-label="Remove photo"
+                    className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] border-line bg-bg text-[10px] text-ink"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className={`${label} mb-0`}>
+              Location (for the map view)
+            </label>
+            <button
+              type="button"
+              onClick={findLocation}
+              disabled={locating}
+              className="rounded-pill border-[1.5px] border-amber px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-amber disabled:opacity-40"
+            >
+              {locating ? "Finding…" : "◎ Find location"}
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:max-w-[420px]">
+            <input
+              type="number"
+              step="any"
+              className={field}
+              value={lat ?? ""}
+              onChange={(e) =>
+                setLat(e.target.value === "" ? null : Number(e.target.value))
+              }
+              placeholder="Latitude"
+              aria-label="Latitude"
+            />
+            <input
+              type="number"
+              step="any"
+              className={field}
+              value={lng ?? ""}
+              onChange={(e) =>
+                setLng(e.target.value === "" ? null : Number(e.target.value))
+              }
+              placeholder="Longitude"
+              aria-label="Longitude"
+            />
+          </div>
+          {locMessage && (
+            <p className="mt-1.5 font-mono text-[10px] text-dim">{locMessage}</p>
+          )}
+          <p className="mt-1.5 font-mono text-[10px] italic text-dim">
+            Optional — pins the café on the map. Find looks it up by name and
+            area; you can also paste coordinates from Google Maps (right-click
+            the spot → click the numbers to copy).
+          </p>
         </div>
 
         <div>

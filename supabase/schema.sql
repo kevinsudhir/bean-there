@@ -13,8 +13,15 @@ create table if not exists public.cafes (
   items jsonb not null default '[]',
   verdict text not null default '',
   photos jsonb not null default '[]',
+  -- Optional map pin (WGS84). Null = café not located yet.
+  lat double precision,
+  lng double precision,
   created_at timestamptz not null default now()
 );
+
+-- Already ran the schema before the map feature existed? Add the columns with:
+--   alter table public.cafes add column if not exists lat double precision;
+--   alter table public.cafes add column if not exists lng double precision;
 
 -- Helpful index for sorting by visit date.
 create index if not exists cafes_date_idx on public.cafes (date desc);

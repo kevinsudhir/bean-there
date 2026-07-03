@@ -5,7 +5,33 @@ import { SITE } from "@/lib/config";
 import type { FilterState, SortKey } from "./Controls";
 import { useTheme } from "./ThemeProvider";
 
-export type MobileView = "list" | "gallery";
+export type MobileView = "list" | "gallery" | "map";
+
+/** Tap order for the view button; its icon previews the NEXT view. */
+const NEXT_VIEW: Record<MobileView, MobileView> = {
+  list: "gallery",
+  gallery: "map",
+  map: "list",
+};
+
+const VIEW_ICON: Record<MobileView, React.ReactNode> = {
+  list: <span className="text-lg">☰</span>,
+  gallery: <span className="text-lg">▦</span>,
+  map: (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-[18px] w-[18px]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 21c-4.5-4.5-7-8-7-11a7 7 0 1 1 14 0c0 3-2.5 6.5-7 11z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  ),
+};
 
 const SORTS: { key: SortKey; label: string }[] = [
   { key: "score", label: "Top rated" },
@@ -94,13 +120,13 @@ export default function MobileControls({
           </svg>
         </button>
 
-        {/* List / gallery view toggle (single button that flips) */}
+        {/* View button cycles list → gallery → map; shows the NEXT view's icon */}
         <button
-          onClick={() => onView(view === "list" ? "gallery" : "list")}
-          aria-label="Toggle view"
-          className="flex h-10 w-11 flex-none items-center justify-center rounded-pill border-[1.5px] border-line text-lg text-ink"
+          onClick={() => onView(NEXT_VIEW[view])}
+          aria-label={`Switch to ${NEXT_VIEW[view]} view`}
+          className="flex h-10 w-11 flex-none items-center justify-center rounded-pill border-[1.5px] border-line text-ink"
         >
-          {view === "list" ? "▦" : "☰"}
+          {VIEW_ICON[NEXT_VIEW[view]]}
         </button>
       </div>
 

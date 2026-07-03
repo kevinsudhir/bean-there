@@ -7,6 +7,8 @@ import { SCORE_CATEGORIES } from "./types";
  */
 export const SITE = {
   title: "Bean There",
+  /** Home city — appended to map searches so "Pollen, Ancoats" finds the right one. */
+  city: "Manchester",
   kickerLeft: "Manchester · Est. 2026",
   kickerRight: "Two cups · One city · Zero mercy",
   tagline:
@@ -45,6 +47,18 @@ export function toSlug(name: string): string {
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Google Maps link for a cafe: exact coordinates when the cafe has a pin,
+ * otherwise a name + area + city search (good enough for a named café).
+ */
+export function mapsSearchUrl(cafe: Cafe): string {
+  const query =
+    typeof cafe.lat === "number" && typeof cafe.lng === "number"
+      ? `${cafe.lat},${cafe.lng}`
+      : `${cafe.name} ${cafe.area} ${SITE.city}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
 /** Format an ISO date as e.g. "June 2026". Invalid/empty dates render as "—". */

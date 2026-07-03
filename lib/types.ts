@@ -61,4 +61,7 @@ export interface Cafe {
   verdict: string;
   /** Public URLs of uploaded photos. May be empty. */
   photos: string[];
+  /** Optional map coordinates (WGS84). Null/absent = not pinned yet. */
+  lat?: number | null;
+  lng?: number | null;
 }
