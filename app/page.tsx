@@ -28,7 +28,7 @@ export default async function HomePage({
     <main>
       <Header />
       <Wall cafes={cafes} />
-      <AddCafeButton />
+      <AddCafeButton hide={cafes.length === 0} />
     </main>
   );
 }

@@ -8,9 +8,9 @@ import { useAuth } from "./AuthProvider";
  * is logged in is client-side state (the Supabase session lives in the
  * browser), so this is a small client component the server page can drop in.
  */
-export default function AddCafeButton() {
+export default function AddCafeButton({ hide }: { hide?: boolean }) {
   const { session } = useAuth();
-  if (!session) return null;
+  if (!session || hide) return null;
 
   return (
     <Link

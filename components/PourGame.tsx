@@ -68,45 +68,48 @@ export default function PourGame() {
               : "A bit off — try again.";
 
   const celebrate = result !== null && result >= 85;
-  const targetY = 40 + (140 * (100 - target)) / 100;
-  const fillY = 40 + (140 * (100 - fill)) / 100;
+  const targetY = 62 + (100 * (100 - target)) / 100;
+  const fillY = 62 + (100 * (100 - fill)) / 100;
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="relative h-44 w-36">
-        <svg viewBox="0 0 200 210" className="h-full w-full">
+      <div className="relative h-44 w-40">
+        <svg viewBox="0 0 220 200" className="h-full w-full">
           <defs>
             <clipPath id="pourclip">
-              <path d="M50,40 H150 C146,150 128,180 100,180 C72,180 54,150 50,40 Z" />
+              <path d="M48,60 H172 C168,120 150,165 110,165 C70,165 52,120 48,60 Z" />
             </clipPath>
           </defs>
 
           {/* Steam — only on a great pour */}
           {celebrate && (
             <g fill="none" stroke="var(--crema)" strokeWidth="5" strokeLinecap="round">
-              <path className="steam-puff" style={{ animationDelay: "0s" }} d="M85,30 q-7,-10 0,-20" />
-              <path className="steam-puff" style={{ animationDelay: "0.5s" }} d="M100,28 q7,-10 0,-20" />
-              <path className="steam-puff" style={{ animationDelay: "1s" }} d="M115,30 q-7,-10 0,-20" />
+              <path className="steam-puff" style={{ animationDelay: "0s" }} d="M95,50 q-7,-10 0,-20" />
+              <path className="steam-puff" style={{ animationDelay: "0.5s" }} d="M110,48 q7,-10 0,-20" />
+              <path className="steam-puff" style={{ animationDelay: "1s" }} d="M125,50 q-7,-10 0,-20" />
             </g>
           )}
 
-          {/* fill */}
+          {/* saucer */}
+          <ellipse cx="110" cy="178" rx="70" ry="9" fill="none" stroke="var(--ink)" strokeWidth="4" />
+
+          {/* coffee fill (empty area is transparent so the page shows through) */}
           <g clipPath="url(#pourclip)">
-            <rect x="40" y="40" width="120" height="150" fill="var(--empty)" />
-            <rect x="40" y={fillY} width="120" height="200" fill="var(--espresso)" />
-            <rect x="40" y={fillY} width="120" height="6" fill="var(--crema)" />
+            <rect x="44" y={fillY} width="132" height="200" fill="var(--espresso)" />
+            <rect x="44" y={fillY} width="132" height="6" fill="var(--crema)" />
           </g>
 
-          {/* body + handle outline */}
+          {/* handle */}
           <path
-            d="M150,70 C185,78 185,130 152,142"
+            d="M172,80 C205,86 205,132 174,146"
             fill="none"
             stroke="var(--ink)"
             strokeWidth="7"
             strokeLinecap="round"
           />
+          {/* cup outline */}
           <path
-            d="M50,40 H150 C146,150 128,180 100,180 C72,180 54,150 50,40 Z"
+            d="M48,60 H172 C168,120 150,165 110,165 C70,165 52,120 48,60 Z"
             fill="none"
             stroke="var(--ink)"
             strokeWidth="4"
@@ -114,18 +117,18 @@ export default function PourGame() {
 
           {/* TARGET LINE — drawn last so it's always visible, with a halo */}
           <line
-            x1="42"
-            x2="158"
+            x1="46"
+            x2="174"
             y1={targetY}
             y2={targetY}
             stroke="var(--bg)"
             strokeWidth="6"
             strokeLinecap="round"
-            opacity="0.6"
+            opacity="0.7"
           />
           <line
-            x1="44"
-            x2="156"
+            x1="48"
+            x2="172"
             y1={targetY}
             y2={targetY}
             stroke="var(--amber)"
@@ -135,7 +138,7 @@ export default function PourGame() {
           />
           {/* little target arrow on the right edge */}
           <path
-            d={`M162,${targetY} l8,-5 v10 z`}
+            d={`M178,${targetY} l8,-5 v10 z`}
             fill="var(--amber)"
           />
         </svg>
