@@ -1,5 +1,23 @@
+# dependencies
 node_modules
+/.pnp
+.pnp.js
+
+# next.js build output
 .next
+/out
+
+# production
+/build
+
+# environment (NEVER commit your Supabase keys)
+.env
 .env.local
+.env*.local
+
+# misc
 .DS_Store
 *.log
+*.pem
+.vercel
+next-env.d.ts

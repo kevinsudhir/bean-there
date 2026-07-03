@@ -5,6 +5,7 @@ import { getCafeBySlug, getCafes } from "@/lib/cafes";
 import { overallScore, isLoved, formatVisitDate, SITE } from "@/lib/config";
 import CupIcon from "@/components/CupIcon";
 import ScorePills from "@/components/ScorePills";
+import EditCafeLink from "@/components/EditCafeLink";
 
 export const dynamic = "force-dynamic";
 
@@ -32,12 +33,15 @@ export default async function CafePage({
 
   return (
     <main className="mx-auto flex max-w-[1100px] flex-col items-center gap-4 px-6 py-10 text-center">
-      <Link
-        href="/"
-        className="self-start font-mono text-[11px] uppercase tracking-wide text-dim hover:text-ink"
-      >
-        ← All cafés
-      </Link>
+      <div className="flex w-full items-center justify-between">
+        <Link
+          href="/"
+          className="font-mono text-[11px] uppercase tracking-wide text-dim hover:text-ink"
+        >
+          ← All cafés
+        </Link>
+        <EditCafeLink slug={cafe.slug} />
+      </div>
 
       <div className="font-mono text-[11px] uppercase tracking-widest text-amber">
         {cafe.area} · Reviewed {formatVisitDate(cafe.date)}

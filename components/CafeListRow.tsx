@@ -2,7 +2,7 @@
 
 import type { Cafe } from "@/lib/types";
 import { overallScore, isLoved } from "@/lib/config";
-import CupIcon from "./CupIcon";
+import WallCup from "./WallCup";
 
 /**
  * A compact list row for mobile: small cup, name + area, score, and the Loved
@@ -23,7 +23,9 @@ export default function CafeListRow({
       onClick={() => onOpen(cafe)}
       className="flex w-full items-center gap-3 rounded-2xl border-[1.5px] border-line bg-card p-3.5 text-left"
     >
-      <CupIcon fill={overall / 5} size={44} />
+      <span className="block h-10 w-[68px] flex-none">
+        <WallCup scores={cafe.scores} overall={overall} compact />
+      </span>
 
       <span className="min-w-0">
         <span className="block truncate font-display text-lg font-extrabold leading-none">

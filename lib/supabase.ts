@@ -17,6 +17,8 @@ export const supabase =
         auth: {
           persistSession: true,
           autoRefreshToken: true,
+          // Detect and complete the sign-in when the user lands back here from
+          // the magic-link email (handles both the ?code= and #token styles).
           detectSessionInUrl: true,
           flowType: "pkce",
         },

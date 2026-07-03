@@ -65,3 +65,50 @@ export async function createCafe(input: NewCafe): Promise<Cafe> {
   if (error) throw new Error(error.message);
   return data as Cafe;
 }
+
+/** Fetch a single cafe by its id, or null if not found. */
+export async function getCafeById(id: string): Promise<Cafe | null> {
+  if (!supabase) {
+    return SAMPLE_CAFES.find((c) => c.id === id) ?? null;
+  }
+
+  const { data, error } = await supabase
+    .from("cafes")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) return null;
+  return data as Cafe;
+}
+
+/** Update an existing cafe. Slug is re-derived from the (possibly new) name. */
+export async function updateCafe(
+  id: string,
+  input: NewCafe,
+): Promise<Cafe> {
+  if (!supabase) {
+    throw new Error("Supabase isn't configured.");
+  }
+
+  const slug = input.slug ?? toSlug(input.name);
+  const { data, error } = await supabase
+    .from("cafes")
+    .update({ ...input, slug })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as Cafe;
+}
+
+/** Delete a cafe by id. */
+export async function deleteCafe(id: string): Promise<void> {
+  if (!supabase) {
+    throw new Error("Supabase isn't configured.");
+  }
+
+  const { error } = await supabase.from("cafes").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}

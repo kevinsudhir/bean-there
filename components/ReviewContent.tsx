@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { Cafe, Who } from "@/lib/types";
 import { overallScore, isLoved, formatVisitDate, SITE } from "@/lib/config";
+import { useAuth } from "./AuthProvider";
 import CupIcon from "./CupIcon";
 import ScorePills from "./ScorePills";
 import PhotoStrip from "./PhotoStrip";
@@ -23,6 +25,7 @@ const whoLabel: Record<Who, string> = {
  */
 export default function ReviewContent({ cafe }: { cafe: Cafe }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const { session } = useAuth();
 
   const overall = overallScore(cafe.scores);
   const loved = isLoved(cafe);
@@ -90,6 +93,15 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
         Reviewed by <b className="text-amber">{SITE.reviewers.him}</b> &amp;{" "}
         <b className="text-amber">{SITE.reviewers.her}</b>
       </div>
+
+      {session && (
+        <Link
+          href={`/cafe/${cafe.slug}/edit`}
+          className="rounded-pill border-[1.5px] border-line px-4 py-2 font-mono text-[10px] uppercase tracking-wide text-ink hover:border-ink"
+        >
+          Edit this café
+        </Link>
+      )}
 
       <Lightbox src={lightbox} onClose={() => setLightbox(null)} />
     </>

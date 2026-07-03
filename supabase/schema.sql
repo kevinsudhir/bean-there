@@ -38,6 +38,11 @@ create policy "Authenticated can update cafes"
   to authenticated
   using (true);
 
+create policy "Authenticated can delete cafes"
+  on public.cafes for delete
+  to authenticated
+  using (true);
+
 -- 3) Storage bucket for photos (public read).
 --    Create a bucket named "cafe-photos" in Dashboard → Storage, mark it Public,
 --    OR run the following:

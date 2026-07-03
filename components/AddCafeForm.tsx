@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { CafeItem, ItemType, Scores, Who } from "@/lib/types";
+import type { Cafe, CafeItem, ItemType, Scores, Who } from "@/lib/types";
 import { SCORE_CATEGORIES } from "@/lib/types";
 import { overallScore, SITE } from "@/lib/config";
-import { createCafe } from "@/lib/cafes";
+import { createCafe, updateCafe, deleteCafe } from "@/lib/cafes";
 import { uploadPhoto } from "@/lib/upload";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
@@ -30,30 +30,42 @@ const emptyItem = (): CafeItem => ({
 
 const label = "mb-1.5 block font-mono text-xs uppercase tracking-wide text-dim";
 const field =
-  "w-full rounded-lg border-[1.5px] border-line bg-transparent px-3 py-2.5 text-sm text-ink outline-none focus:border-ink";
+  "w-full min-w-0 max-w-full rounded-lg border-[1.5px] border-line bg-transparent px-3 py-2.5 text-sm text-ink outline-none focus:border-ink";
 
 /**
- * The "Add café" form. Fills in name/area/date, the five scores (overall and
- * the badge are calculated live), any number of items with a star for the
- * standout, photo uploads, and the verdict — then saves to Supabase.
+ * The café form, used for BOTH adding and editing. Pass `existing` to edit a
+ * café (fields pre-fill, a Delete button appears, and saving updates instead
+ * of inserting). With no `existing`, it's a blank "add" form.
+ *
+ * Fills in name/area/date, the five scores (overall + badge calculated live),
+ * any number of items with a star for the standout, photo uploads, and the
+ * verdict — then saves to Supabase.
  */
-export default function AddCafeForm() {
+export default function AddCafeForm({ existing }: { existing?: Cafe }) {
   const router = useRouter();
+  const isEdit = Boolean(existing);
 
-  const [name, setName] = useState("");
-  const [area, setArea] = useState("");
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [scores, setScores] = useState<Scores>({
-    coffee: 4,
-    food: 4,
-    vibe: 4,
-    service: 4,
-    value: 4,
-  });
-  const [items, setItems] = useState<CafeItem[]>([emptyItem()]);
-  const [verdict, setVerdict] = useState("");
+  const [name, setName] = useState(existing?.name ?? "");
+  const [area, setArea] = useState(existing?.area ?? "");
+  const [date, setDate] = useState(
+    existing?.date ?? new Date().toISOString().slice(0, 10),
+  );
+  const [scores, setScores] = useState<Scores>(
+    existing?.scores ?? {
+      coffee: 4,
+      food: 4,
+      vibe: 4,
+      service: 4,
+      value: 4,
+    },
+  );
+  const [items, setItems] = useState<CafeItem[]>(
+    existing?.items?.length ? existing.items : [emptyItem()],
+  );
+  const [verdict, setVerdict] = useState(existing?.verdict ?? "");
   const [files, setFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const overall = useMemo(() => overallScore(scores), [scores]);
@@ -75,10 +87,11 @@ export default function AddCafeForm() {
     }
     setSaving(true);
     try {
-      const photos: string[] = [];
+      // Keep any existing photos (edit mode), then append newly chosen ones.
+      const photos: string[] = existing?.photos ? [...existing.photos] : [];
       for (const file of files) photos.push(await uploadPhoto(file));
 
-      await createCafe({
+      const payload = {
         name: name.trim(),
         area: area.trim(),
         date,
@@ -86,8 +99,16 @@ export default function AddCafeForm() {
         items: items.filter((it) => it.name.trim()),
         verdict: verdict.trim(),
         photos,
-      });
+      };
 
+      if (isEdit && existing) {
+        await updateCafe(existing.id, payload);
+      } else {
+        await createCafe(payload);
+      }
+
+      // Invalidate the cached wall data first, then navigate so the change
+      // is reflected when the home page re-renders.
       router.refresh();
       router.push("/");
     } catch (e) {
@@ -96,9 +117,31 @@ export default function AddCafeForm() {
     }
   }
 
+  async function handleDelete() {
+    if (!existing) return;
+    if (
+      !window.confirm(
+        `Delete "${existing.name}"? This can't be undone.`,
+      )
+    )
+      return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await deleteCafe(existing.id);
+      router.refresh();
+      router.push("/");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't delete.");
+      setDeleting(false);
+    }
+  }
+
   return (
-    <div className="mx-auto max-w-[720px] px-6 py-10">
-      <h1 className="mb-1 font-display text-4xl font-extrabold">Add a café</h1>
+    <div className="mx-auto w-full max-w-[720px] overflow-x-hidden px-6 py-10">
+      <h1 className="mb-1 font-display text-4xl font-extrabold">
+        {isEdit ? "Edit café" : "Add a café"}
+      </h1>
       <p className="mb-6 font-voice italic text-dim">
         Fill this in after a visit — the overall score and badge are worked out
         for you.
@@ -145,7 +188,9 @@ export default function AddCafeForm() {
             />
           </div>
           <div>
-            <label className={label}>Photos</label>
+            <label className={label}>
+              Photos{isEdit ? " (new ones add to existing)" : ""}
+            </label>
             <input
               type="file"
               accept="image/*"
@@ -201,7 +246,7 @@ export default function AddCafeForm() {
             {items.map((it, i) => (
               <div
                 key={i}
-                className="grid grid-cols-1 gap-2 rounded-lg border-[1.5px] border-line p-3 sm:grid-cols-[1fr_1fr_auto_auto_auto] sm:items-center"
+                className="grid grid-cols-1 gap-2 rounded-lg border-[1.5px] border-line p-3 [&>*]:min-w-0 sm:grid-cols-[1fr_1fr_auto_auto_auto] sm:items-center"
               >
                 <input
                   className={field}
@@ -281,13 +326,17 @@ export default function AddCafeForm() {
           <p className="font-mono text-xs text-red-700">{error}</p>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button
             onClick={handleSubmit}
-            disabled={saving || !isSupabaseConfigured}
+            disabled={saving || deleting || !isSupabaseConfigured}
             className="h-11 rounded-pill bg-ink px-6 font-mono text-xs uppercase tracking-wide text-bg disabled:opacity-40"
           >
-            {saving ? "Saving…" : "Publish café"}
+            {saving
+              ? "Saving…"
+              : isEdit
+                ? "Save changes"
+                : "Publish café"}
           </button>
           <button
             onClick={() => router.push("/")}
@@ -295,6 +344,15 @@ export default function AddCafeForm() {
           >
             Cancel
           </button>
+          {isEdit && (
+            <button
+              onClick={handleDelete}
+              disabled={saving || deleting}
+              className="ml-auto h-11 rounded-pill border-[1.5px] border-red-700 px-6 font-mono text-xs uppercase tracking-wide text-red-700 disabled:opacity-40"
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </button>
+          )}
         </div>
       </div>
     </div>
