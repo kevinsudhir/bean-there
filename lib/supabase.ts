@@ -22,6 +22,13 @@ export const supabase =
           detectSessionInUrl: true,
           flowType: "pkce",
         },
+        global: {
+          // Next.js patches fetch to cache GET requests. That was causing the
+          // server to replay a stale café list. Force every Supabase request
+          // to skip the cache so reads are always fresh.
+          fetch: (input, init) =>
+            fetch(input, { ...init, cache: "no-store" }),
+        },
       })
     : null;
 

@@ -4,6 +4,7 @@ import RequireAuth from "@/components/RequireAuth";
 import { getCafeBySlug } from "@/lib/cafes";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 export const metadata = { title: "Edit café — Bean There" };
 
 /** Edit page for one café. Auth-guarded; pre-fills the form with the café. */

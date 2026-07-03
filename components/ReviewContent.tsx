@@ -34,7 +34,19 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
     <>
       <div className="flex items-center justify-center font-display text-base font-extrabold uppercase">
         {SITE.title}
-        <span className="ml-1.5 inline-block h-4 w-3.5 rounded-full bg-amber" />
+        <svg
+          viewBox="0 0 40 50"
+          className="ml-1.5 inline-block h-[1em] w-[0.8em] align-[-0.1em]"
+          aria-hidden="true"
+        >
+          <ellipse cx="20" cy="25" rx="15" ry="23" fill="var(--amber)" />
+          <path
+            d="M20,4 C12,16 12,34 20,46"
+            fill="none"
+            stroke="var(--bg)"
+            strokeWidth="3.4"
+          />
+        </svg>
       </div>
 
       <div className="font-mono text-[11px] uppercase tracking-widest text-amber">

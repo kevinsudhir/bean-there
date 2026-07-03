@@ -8,6 +8,7 @@ import ScorePills from "@/components/ScorePills";
 import EditCafeLink from "@/components/EditCafeLink";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const whoLabel: Record<Who, string> = {
   him: SITE.reviewers.him,

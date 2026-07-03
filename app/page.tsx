@@ -11,6 +11,7 @@ import { getCafes } from "@/lib/cafes";
  * We opt out of static caching so newly added cafes show up without a rebuild.
  */
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function HomePage() {
   const cafes = await getCafes();
