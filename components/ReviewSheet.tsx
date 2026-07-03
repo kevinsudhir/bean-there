@@ -114,7 +114,7 @@ export default function ReviewSheet({
           ref={scrollRef}
           className="max-h-[calc(92vh-2.5rem)] overflow-y-auto overflow-x-hidden"
         >
-          <div className="flex w-full flex-col items-center gap-3.5 px-5 pb-8 pt-2 text-center">
+          <div className="flex w-full flex-col items-center gap-3.5 px-5 pb-[max(3rem,env(safe-area-inset-bottom))] pt-2 text-center">
             <ReviewContent cafe={cafe} />
           </div>
         </div>
