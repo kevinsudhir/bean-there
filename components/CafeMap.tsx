@@ -36,6 +36,7 @@ interface LeafletContext {
   map: Leaflet.Map;
   tiles: Leaflet.TileLayer | null;
   markers: Leaflet.LayerGroup;
+  resize: ResizeObserver;
 }
 
 export default function CafeMap({
@@ -64,11 +65,25 @@ export default function CafeMap({
         center: MANCHESTER,
         zoom: 12,
       });
-      ctxRef.current = { L, map, tiles: null, markers: L.layerGroup().addTo(map) };
+      // Leaflet sizes itself from the container ONCE, at creation — which can
+      // happen before the layout/styles have settled, leaving tiles rendered
+      // for a sliver of the real area (grey map). Re-measure on the next
+      // frame and whenever the container resizes (rotation, view toggles).
+      const resize = new ResizeObserver(() => map.invalidateSize());
+      resize.observe(containerRef.current);
+      requestAnimationFrame(() => map.invalidateSize());
+      ctxRef.current = {
+        L,
+        map,
+        tiles: null,
+        markers: L.layerGroup().addTo(map),
+        resize,
+      };
       setReady(true);
     })();
     return () => {
       disposed = true;
+      ctxRef.current?.resize.disconnect();
       ctxRef.current?.map.remove();
       ctxRef.current = null;
     };
