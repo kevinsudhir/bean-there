@@ -138,7 +138,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[720px] overflow-x-hidden px-6 py-10">
+    <div className="mx-auto w-full max-w-[720px] overflow-x-hidden px-6 pb-28 pt-10">
       <h1 className="mb-1 font-display text-4xl font-extrabold">
         {isEdit ? "Edit café" : "Add a café"}
       </h1>

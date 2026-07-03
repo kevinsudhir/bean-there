@@ -15,7 +15,7 @@ export default function AddCafeButton() {
   return (
     <Link
       href="/add"
-      className="fixed bottom-6 right-6 z-50 flex h-14 items-center gap-2 rounded-pill border-[1.5px] border-ink bg-ink px-6 font-mono text-sm uppercase tracking-wide text-bg shadow-lg"
+      className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-pill border-[1.5px] border-ink bg-ink px-5 py-3.5 font-mono text-sm uppercase tracking-wide text-bg shadow-lg"
     >
       + Add café
     </Link>

@@ -41,7 +41,7 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
         {cafe.area} · Reviewed {formatVisitDate(cafe.date)}
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8">
+      <div className="flex w-full max-w-full flex-wrap items-center justify-center gap-4 sm:gap-8">
         <h2 className="font-display text-[clamp(36px,4.6vw,64px)] font-extrabold leading-[0.86] tracking-tight">
           {cafe.name}
         </h2>
@@ -64,7 +64,7 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
 
       <ScorePills scores={cafe.scores} />
 
-      <div className="flex w-full flex-wrap justify-center gap-x-[clamp(22px,3.5vw,54px)] gap-y-3.5">
+      <div className="flex w-full max-w-full flex-wrap justify-center gap-x-6 gap-y-3.5 sm:gap-x-[clamp(22px,3.5vw,54px)]">
         {cafe.items.map((item, i) => (
           <div key={i} className="flex flex-col items-center gap-0.5">
             <CupIcon type={item.type} fill={item.rating / 5} size={100} />
@@ -83,7 +83,7 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
         ))}
       </div>
 
-      <p className="max-w-[740px] font-voice text-[clamp(15px,1.3vw,19px)] italic leading-[1.4]">
+      <p className="w-full max-w-[740px] px-1 font-voice text-[clamp(15px,1.3vw,19px)] italic leading-[1.45]">
         {cafe.verdict}
       </p>
 
