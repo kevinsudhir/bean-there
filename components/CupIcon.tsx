@@ -1,3 +1,6 @@
+"use client";
+
+import { useId } from "react";
 import type { ItemType } from "@/lib/types";
 
 /**
@@ -19,10 +22,6 @@ interface CupIconProps {
   className?: string;
 }
 
-// Clip-path ids are static per shape. Multiple icons on a page share an id,
-// which is fine: the geometry is identical, so url(#…) always resolves to the
-// right shape. (Random/counter ids differ between server render and client
-// hydration, which is worse — mismatches and cross-icon clip collisions.)
 const STROKE = "var(--itemstroke)";
 const CARD = "var(--card)";
 const ESPRESSO = "var(--espresso)";
@@ -35,7 +34,12 @@ export default function CupIcon({
   className,
 }: CupIconProps) {
   const f = Math.max(0, Math.min(1, fill));
-  const clipId = `cupclip-${type === "food" ? "food" : type === "bake" || type === "dessert" ? "muffin" : type === "latte" || type === "cold" ? "glass" : "cup"}`;
+  // useId: unique per instance AND stable across server render/hydration.
+  // A shared/static id would resolve to the first match in the document,
+  // which can sit in the CSS-hidden twin layout (desktop vs mobile walls) —
+  // and browsers ignore clip-paths inside display:none subtrees, so the
+  // fill would overflow the outline. Colons stripped for url(#…) safety.
+  const clipId = `cupclip${useId().replace(/:/g, "")}`;
 
   // Plate of food (sandwiches, fries, halloumi, savoury dishes).
   if (type === "food") {

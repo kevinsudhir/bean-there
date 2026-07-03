@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 /**
  * A "pour the perfect cup" mini-game for the empty/error states.
@@ -16,6 +16,10 @@ export default function PourGame() {
   const [result, setResult] = useState<number | null>(null); // score 0–100
   const [best, setBest] = useState(0);
   const raf = useRef<number | null>(null);
+  // Unique per instance: the empty state renders one PourGame per (desktop/
+  // mobile) layout, and a clip-path id resolving into the CSS-hidden twin
+  // would be ignored, letting the coffee fill spill outside the cup.
+  const clipId = `pourclip${useId().replace(/:/g, "")}`;
 
   useEffect(() => {
     setTarget(55 + Math.random() * 35);
@@ -82,7 +86,7 @@ export default function PourGame() {
       <div className="relative w-52">
         <svg viewBox="0 0 240 220" className="h-auto w-full">
           <defs>
-            <clipPath id="pourclip">
+            <clipPath id={clipId}>
               <path d="M50,55 H190 C185,130 165,180 120,180 C75,180 55,130 50,55 Z" />
             </clipPath>
           </defs>
@@ -104,7 +108,7 @@ export default function PourGame() {
               (fill 0) the cup is genuinely empty. Height is capped to the cup
               bottom (y=180) as a belt-and-braces guard against overflow. */}
           {fill > 0.5 && (
-            <g clipPath="url(#pourclip)">
+            <g clipPath={`url(#${clipId})`}>
               <rect
                 x="48"
                 y={fillY}

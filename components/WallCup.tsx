@@ -1,3 +1,6 @@
+"use client";
+
+import { useId } from "react";
 import type { Scores } from "@/lib/types";
 
 /**
@@ -26,10 +29,11 @@ export default function WallCup({
   const yTop = 94;
   const yBot = 214;
   const yF = yBot - (yBot - yTop) * f;
-  // Static clip id: every cup clips to the same shape, so instances sharing it
-  // is harmless — and unlike a random id it's identical on server and client,
-  // avoiding hydration mismatches and id churn on re-renders.
-  const id = compact ? "wallcup-c" : "wallcup";
+  // useId: unique per instance and hydration-safe. Sharing one static id
+  // breaks when the first match lives in the CSS-hidden twin layout —
+  // clip-paths in display:none subtrees are ignored and the coffee fill
+  // overflows the cup.
+  const id = useId().replace(/:/g, "");
 
   // Compact crops tightly around the cup (which lives roughly x:140–370,
   // y:80–220 in the full art) and omits saucer/steam/hover.
