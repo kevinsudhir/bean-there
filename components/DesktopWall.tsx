@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Controls, { type DesktopView } from "./Controls";
 import CafeCard from "./CafeCard";
+import CafeListRow from "./CafeListRow";
 import CafeMap from "./CafeMap";
 import ReviewModal from "./ReviewModal";
 import WallEmpty from "./WallEmpty";
@@ -41,6 +42,18 @@ export default function DesktopWall({
       {view === "map" ? (
         <div className="mx-auto max-w-[1500px] px-16 pb-24 pt-6">
           <CafeMap cafes={cafes} onOpen={onOpen} />
+        </div>
+      ) : view === "list" ? (
+        <div className="mx-auto flex max-w-[880px] flex-col gap-2.5 px-6 pb-24 pt-6">
+          {cafes.length > 0 ? (
+            cafes.map((cafe) => (
+              <CafeListRow key={cafe.id} cafe={cafe} onOpen={onOpen} />
+            ))
+          ) : (
+            <p className="py-12 text-center font-voice text-xl italic text-dim">
+              No cafés match — try a different search.
+            </p>
+          )}
         </div>
       ) : (
         <div className="mx-auto grid max-w-[1500px] grid-cols-2 gap-x-4 gap-y-6 px-16 pb-24 pt-6 lg:grid-cols-3">
