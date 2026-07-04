@@ -143,6 +143,16 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
       setLocMessage("Add the café name first.");
       return;
     }
+    // Don't silently clobber coordinates that were pasted in by hand — the
+    // geocoder's guess is often less accurate than a copied Google Maps spot.
+    if (
+      (lat !== null || lng !== null) &&
+      !window.confirm(
+        "Replace the coordinates already entered with a lookup by name?",
+      )
+    ) {
+      return;
+    }
     setLocating(true);
     try {
       const q = [name.trim(), area.trim(), SITE.city].filter(Boolean).join(", ");
@@ -413,9 +423,10 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
             <p className="mt-1.5 font-mono text-[10px] text-dim">{locMessage}</p>
           )}
           <p className="mt-1.5 font-mono text-[10px] italic text-dim">
-            Optional — pins the café on the map. Find looks it up by name and
-            area; you can also paste coordinates from Google Maps (right-click
-            the spot → click the numbers to copy).
+            Optional — pins the café on the map. Pasting from Google Maps is
+            most accurate (right-click the café → click the numbers to copy) —
+            paste, then save without pressing Find. Find looks it up by name
+            and replaces whatever is in the boxes.
           </p>
         </div>
 

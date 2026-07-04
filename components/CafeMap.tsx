@@ -114,8 +114,10 @@ export default function CafeMap({
       const icon = ctx.L.divIcon({
         className: "", // suppress Leaflet's default white-square styling
         html: `<div class="mappin${isLoved(cafe) ? " mappin-loved" : ""}">${CUP_SVG}${overallScore(cafe.scores).toFixed(1)}</div>`,
+        // Anchor at the pill's centre so it sits ON the spot — bottom-edge
+        // anchoring made every pin read ~a half-street north of the café.
         iconSize: [64, 30],
-        iconAnchor: [32, 30],
+        iconAnchor: [32, 15],
       });
       ctx.L.marker([cafe.lat as number, cafe.lng as number], {
         icon,
