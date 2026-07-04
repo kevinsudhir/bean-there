@@ -9,7 +9,7 @@ import { SITE } from "@/lib/config";
 // fileURLToPath); the edge build doesn't, and runs fine on any host.
 export const runtime = "edge";
 
-export const alt = "Bean There — Manchester coffee, rated";
+export const alt = "Bean There, Done That — Manchester's cafés, rated";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

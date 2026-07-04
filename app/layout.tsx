@@ -32,13 +32,13 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   ),
-  title: "Bean There — Manchester coffee, rated",
+  title: "Bean There, Done That — Manchester's cafés, rated",
   description:
     "Two people drinking their way round Manchester's cafés and scoring them so you don't have to gamble your flat white money.",
   openGraph: {
     siteName: "Bean There",
     type: "website",
-    title: "Bean There — Manchester coffee, rated",
+    title: "Bean There, Done That — Manchester's cafés, rated",
     description:
       "Two people drinking their way round Manchester's cafés and scoring them so you don't have to gamble your flat white money.",
   },
