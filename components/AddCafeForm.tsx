@@ -42,6 +42,35 @@ const emptyItem = (): CafeItem => ({
 const clampScore = (n: number): number =>
   Number.isFinite(n) ? Math.min(5, Math.max(0, Math.round(n * 10) / 10)) : 0;
 
+// Shrink a picked image to a share-friendly size and re-encode as JPEG, so huge
+// phone photos don't bloat the page or make the share-card renderer choke/500.
+// Falls back to the original file if the browser can't decode it (e.g. HEIC).
+async function downscaleImage(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const max = 1600;
+    const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+    const w = Math.round(bitmap.width * scale);
+    const h = Math.round(bitmap.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    const blob = await new Promise<Blob | null>((res) =>
+      canvas.toBlob(res, "image/jpeg", 0.85),
+    );
+    if (!blob) return file;
+    return new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, {
+      type: "image/jpeg",
+    });
+  } catch {
+    return file;
+  }
+}
+
 const label = "mb-1.5 block font-mono text-xs uppercase tracking-wide text-dim";
 const field =
   "w-full min-w-0 max-w-full rounded-lg border-[1.5px] border-line bg-transparent px-3 py-2.5 text-sm text-ink outline-none focus:border-ink";
@@ -273,7 +302,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
       const photos: string[] = [...existingPhotos];
       const photoTags: (string | null)[] = [...existingPhotoTags];
       for (let k = 0; k < files.length; k++) {
-        photos.push(await uploadPhoto(files[k]));
+        photos.push(await uploadPhoto(await downscaleImage(files[k])));
         photoTags.push(fileTags[k] ?? null);
       }
 
@@ -415,6 +444,11 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
                       alt="Review photo"
                       className="h-24 w-[76px] rounded-lg border-[1.5px] border-line object-cover"
                     />
+                    {i === 0 && (
+                      <span className="absolute left-1 top-1 rounded bg-amber px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wide text-white">
+                        Cover
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
@@ -436,12 +470,19 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
               ))}
               {filePreviews.map((src, i) => (
                 <div key={src} className="flex flex-col items-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={src}
-                    alt="New photo"
-                    className="h-24 w-[76px] rounded-lg border-[1.5px] border-amber object-cover"
-                  />
+                  <div className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={src}
+                      alt="New photo"
+                      className="h-24 w-[76px] rounded-lg border-[1.5px] border-amber object-cover"
+                    />
+                    {existingPhotos.length === 0 && i === 0 && (
+                      <span className="absolute left-1 top-1 rounded bg-amber px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wide text-white">
+                        Cover
+                      </span>
+                    )}
+                  </div>
                   {tagSelect(fileTags[i] ?? null, (v) =>
                     setFileTags((l) => l.map((t, j) => (j === i ? v : t))),
                   )}

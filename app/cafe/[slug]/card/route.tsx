@@ -106,6 +106,31 @@ function Badge({ overall, size }: { overall: number; size: number }) {
   );
 }
 
+/**
+ * Fetch a photo and return it as a data URI — but only if it's a format Satori
+ * can actually decode (JPEG/PNG/WebP) and isn't enormous. iPhone HEIC uploads
+ * and huge files would otherwise make ImageResponse throw a 500 mid-render, so
+ * anything unsupported returns null and the caller renders a photo-less slide.
+ */
+async function safeImage(url: string): Promise<string | null> {
+  try {
+    const r = await fetch(url);
+    const ct = (r.headers.get("content-type") || "").toLowerCase();
+    if (!r.ok || !/image\/(jpeg|jpg|png|webp)/.test(ct)) return null;
+    const buf = await r.arrayBuffer();
+    if (buf.byteLength > 6_000_000) return null;
+    const bytes = new Uint8Array(buf);
+    let bin = "";
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
+    }
+    return `data:${ct};base64,${btoa(bin)}`;
+  } catch {
+    return null;
+  }
+}
+
 function chip(text: string, dark: boolean) {
   return (
     <div
@@ -139,18 +164,65 @@ export async function GET(
   if (!slide) return new Response("No such slide", { status: 404 });
 
   const overall = overallScore(cafe.scores);
-  const fonts = await loadOgFonts(new URL(req.url).origin);
+  // Fonts are a nice-to-have — never let a font hiccup 500 the whole card.
+  let fonts: Awaited<ReturnType<typeof loadOgFonts>> = [];
+  try {
+    fonts = await loadOgFonts(new URL(req.url).origin);
+  } catch {
+    fonts = [];
+  }
   const opts = { width: W, height: H, fonts };
 
   // ---- photo-backed slides (cover + extra photos) ----
   if (slide.kind === "cover" || slide.kind === "photo") {
     const isCover = slide.kind === "cover";
+    const imgSrc = await safeImage(slide.photo);
+
+    // Photo couldn't be decoded (HEIC, too big, fetch failed): render a clean
+    // cream fallback so the carousel still completes instead of erroring.
+    if (!imgSrc) {
+      return new ImageResponse(
+        (
+          <div
+            style={{
+              width: W,
+              height: H,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 24,
+              background: CREAM,
+              color: INK,
+              padding: 72,
+              textAlign: "center",
+            }}
+          >
+            <Wordmark color={INK} />
+            <div style={{ fontFamily: "SpaceMono", fontSize: 28, letterSpacing: 3, color: AMBER }}>
+              {cafe.area.toUpperCase()}
+            </div>
+            <div style={{ fontFamily: "Bricolage", fontWeight: 800, fontSize: 96, lineHeight: 1 }}>
+              {cafe.name}
+            </div>
+            <Badge overall={overall} size={170} />
+            {slide.item && (
+              <div style={{ display: "flex" }}>
+                {chip(`${slide.item.name} · ${slide.item.rating.toFixed(1)}`, false)}
+              </div>
+            )}
+          </div>
+        ),
+        opts,
+      );
+    }
+
     return new ImageResponse(
       (
         <div style={{ position: "relative", display: "flex", width: W, height: H }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={slide.photo}
+            src={imgSrc}
             width={W}
             height={H}
             style={{ position: "absolute", top: 0, left: 0, width: W, height: H, objectFit: "cover" }}
