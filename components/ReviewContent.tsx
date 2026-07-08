@@ -10,6 +10,7 @@ import {
   mapsSearchUrl,
   SITE,
 } from "@/lib/config";
+import { buildSlides } from "@/lib/shareSlides";
 import { useAuth } from "./AuthProvider";
 import CupIcon from "./CupIcon";
 import ScorePills from "./ScorePills";
@@ -37,6 +38,7 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
 
   const overall = overallScore(cafe.scores);
   const loved = isLoved(cafe);
+  const slideCount = buildSlides(cafe).length;
 
   // Share the cafe's own page (the modal URL is just the wall). Native share
   // sheet where available (phones), clipboard copy elsewhere.
@@ -59,33 +61,40 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
     }
   }
 
-  // Fetch the server-rendered PNG card and either share it (phones with the
-  // file-share API — lands straight in Instagram/WhatsApp) or download it.
-  async function saveImage() {
+  // Fetch every carousel slide as a PNG, then share the set (phones with the
+  // file-share API — lands straight in an Instagram carousel) or download each.
+  async function saveImages() {
     setImgBusy(true);
     try {
-      const res = await fetch(`/cafe/${cafe.slug}/card`);
-      if (!res.ok) throw new Error("Couldn't render the card.");
-      const blob = await res.blob();
-      const file = new File([blob], `${cafe.slug}-bean-there.png`, {
-        type: "image/png",
-      });
-      if (navigator.canShare?.({ files: [file] })) {
+      const files: File[] = [];
+      for (let i = 0; i < slideCount; i++) {
+        const res = await fetch(`/cafe/${cafe.slug}/card?i=${i}`);
+        if (!res.ok) throw new Error("Couldn't render a slide.");
+        const blob = await res.blob();
+        files.push(
+          new File([blob], `${cafe.slug}-${i + 1}.png`, { type: "image/png" }),
+        );
+      }
+      if (files.length && navigator.canShare?.({ files })) {
         try {
-          await navigator.share({ files: [file], title: cafe.name });
+          await navigator.share({ files, title: cafe.name });
           return;
         } catch {
           return; // user dismissed — not an error
         }
       }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = file.name;
-      a.click();
-      URL.revokeObjectURL(url);
+      for (const file of files) {
+        const url = URL.createObjectURL(file);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = file.name;
+        a.click();
+        URL.revokeObjectURL(url);
+        // Stagger so the browser doesn't block the batch of downloads.
+        await new Promise((r) => setTimeout(r, 350));
+      }
     } catch {
-      window.open(`/cafe/${cafe.slug}/card`, "_blank");
+      window.open(`/cafe/${cafe.slug}/card?i=0`, "_blank");
     } finally {
       setImgBusy(false);
     }
@@ -202,11 +211,15 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
           {copied ? "Link copied ✓" : "Share"}
         </button>
         <button
-          onClick={saveImage}
+          onClick={saveImages}
           disabled={imgBusy}
           className="rounded-pill border-[1.5px] border-line px-4 py-2 font-mono text-[10px] uppercase tracking-wide text-ink hover:border-ink disabled:opacity-40"
         >
-          {imgBusy ? "Making image…" : "Save image"}
+          {imgBusy
+            ? "Making images…"
+            : slideCount > 1
+              ? `Save ${slideCount} images`
+              : "Save image"}
         </button>
         {session && (
           <Link

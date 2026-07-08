@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Cafe, CafeItem, ItemType, Scores, Who } from "@/lib/types";
 import { SCORE_CATEGORIES } from "@/lib/types";
@@ -83,7 +83,12 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
   const [existingPhotos, setExistingPhotos] = useState<string[]>(
     existing?.photos ?? [],
   );
+  // Per-photo item tag (item name or null), kept parallel to the photo arrays.
+  const [existingPhotoTags, setExistingPhotoTags] = useState<(string | null)[]>(
+    (existing?.photos ?? []).map((_, i) => existing?.photoTags?.[i] ?? null),
+  );
   const [files, setFiles] = useState<File[]>([]);
+  const [fileTags, setFileTags] = useState<(string | null)[]>([]);
   // Optional map pin. Found via the geocoder button or typed in manually.
   const [lat, setLat] = useState<number | null>(existing?.lat ?? null);
   const [lng, setLng] = useState<number | null>(existing?.lng ?? null);
@@ -95,6 +100,36 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
 
   const overall = useMemo(() => overallScore(scores), [scores]);
   const loved = overall >= SITE.badgeThreshold;
+
+  // Item names that a photo can be tagged with (drives the tag dropdowns).
+  const itemNames = items.map((it) => it.name.trim()).filter(Boolean);
+
+  // Object URLs for previewing newly-picked files; revoked when they change.
+  const filePreviews = useMemo(
+    () => files.map((f) => URL.createObjectURL(f)),
+    [files],
+  );
+  useEffect(
+    () => () => filePreviews.forEach((u) => URL.revokeObjectURL(u)),
+    [filePreviews],
+  );
+
+  // A small "tag this photo with an item" dropdown, shared by both photo lists.
+  const tagSelect = (value: string | null, onChange: (v: string | null) => void) => (
+    <select
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value || null)}
+      aria-label="Tag photo with an item"
+      className="mt-1 w-[76px] rounded border-[1.5px] border-line bg-card px-1 py-1 font-mono text-[9px] text-ink outline-none"
+    >
+      <option value="">— tag —</option>
+      {itemNames.map((n) => (
+        <option key={n} value={n}>
+          {n}
+        </option>
+      ))}
+    </select>
+  );
 
   const setScore = (cat: keyof Scores, value: number) =>
     setScores((s) => ({ ...s, [cat]: clampScore(value) }));
@@ -233,9 +268,14 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
     }
     setSaving(true);
     try {
-      // Kept existing photos (edit mode, minus removed), plus newly chosen ones.
+      // Kept existing photos (edit mode, minus removed), plus newly chosen
+      // ones — with their item tags kept parallel to the photo array.
       const photos: string[] = [...existingPhotos];
-      for (const file of files) photos.push(await uploadPhoto(file));
+      const photoTags: (string | null)[] = [...existingPhotoTags];
+      for (let k = 0; k < files.length; k++) {
+        photos.push(await uploadPhoto(files[k]));
+        photoTags.push(fileTags[k] ?? null);
+      }
 
       const payload = {
         name: name.trim(),
@@ -245,10 +285,13 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
         items: items.filter((it) => it.name.trim()),
         verdict: verdict.trim(),
         photos,
-        // Only send lat/lng when a pin is set (or being cleared on a café
-        // that had one) — a database that predates the map columns would
-        // otherwise reject every save.
+        // Only send lat/lng and photoTags when they carry something (or the
+        // café already had them) — a database that predates these columns
+        // would otherwise reject every save.
         ...(lat !== null || existing?.lat != null ? { lat, lng } : {}),
+        ...(photoTags.some(Boolean) || existing?.photoTags
+          ? { photoTags }
+          : {}),
       };
 
       if (isEdit && existing) {
@@ -347,37 +390,69 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
               type="file"
               accept="image/*"
               multiple
-              onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+              onChange={(e) => {
+                const list = Array.from(e.target.files ?? []);
+                setFiles(list);
+                setFileTags(list.map(() => null));
+              }}
               className={`${field} file:mr-3 file:rounded file:border-0 file:bg-ink file:px-3 file:py-1 file:text-bg`}
             />
           </div>
         </div>
 
-        {existingPhotos.length > 0 && (
+        {(existingPhotos.length > 0 || filePreviews.length > 0) && (
           <div>
-            <label className={label}>Current photos (✕ to remove on save)</label>
-            <div className="flex flex-wrap gap-2.5">
-              {existingPhotos.map((src) => (
-                <div key={src} className="relative">
+            <label className={label}>
+              Photos — tag each with the item it shows (for the share carousel)
+            </label>
+            <div className="flex flex-wrap gap-3">
+              {existingPhotos.map((src, i) => (
+                <div key={src} className="flex flex-col items-center">
+                  <div className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={src}
+                      alt="Review photo"
+                      className="h-24 w-[76px] rounded-lg border-[1.5px] border-line object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExistingPhotos((l) => l.filter((_, j) => j !== i));
+                        setExistingPhotoTags((l) => l.filter((_, j) => j !== i));
+                      }}
+                      aria-label="Remove photo"
+                      className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] border-line bg-bg text-[10px] text-ink"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {tagSelect(existingPhotoTags[i] ?? null, (v) =>
+                    setExistingPhotoTags((l) =>
+                      l.map((t, j) => (j === i ? v : t)),
+                    ),
+                  )}
+                </div>
+              ))}
+              {filePreviews.map((src, i) => (
+                <div key={src} className="flex flex-col items-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={src}
-                    alt="Review photo"
-                    className="h-24 w-[72px] rounded-lg border-[1.5px] border-line object-cover"
+                    alt="New photo"
+                    className="h-24 w-[76px] rounded-lg border-[1.5px] border-amber object-cover"
                   />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExistingPhotos((list) => list.filter((p) => p !== src))
-                    }
-                    aria-label="Remove photo"
-                    className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] border-line bg-bg text-[10px] text-ink"
-                  >
-                    ✕
-                  </button>
+                  {tagSelect(fileTags[i] ?? null, (v) =>
+                    setFileTags((l) => l.map((t, j) => (j === i ? v : t))),
+                  )}
                 </div>
               ))}
             </div>
+            <p className="mt-1.5 font-mono text-[10px] italic text-dim">
+              Tagged photos get that item&apos;s score on their carousel slide;
+              untagged ones just show the overall score. The first photo is the
+              cover.
+            </p>
           </div>
         )}
 

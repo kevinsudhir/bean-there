@@ -41,9 +41,7 @@ export default function OpengraphImage() {
           </svg>
           <div style={{ fontSize: 110, fontWeight: 800 }}>BEAN THERE</div>
         </div>
-        <div style={{ fontSize: 34, color: "#c77d18" }}>
-          {SITE.kickerRight}
-        </div>
+        <div style={{ fontSize: 34, color: "#c77d18" }}>{SITE.kickerRight}</div>
       </div>
     ),
     size,

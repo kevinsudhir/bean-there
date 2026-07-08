@@ -10,7 +10,7 @@ export const SITE = {
   /** Home city — appended to map searches so "Pollen, Ancoats" finds the right one. */
   city: "Manchester",
   kickerLeft: "Manchester · Est. 2026",
-  kickerRight: "Two cups · One city · Zero mercy",
+  kickerRight: "Two cups · One city",
   tagline:
     "We drink our way round Manchester's cafés and score them so you don't have to gamble your flat white money.",
   /** The his/hers explainer shown in the "Our Order" tooltip. */

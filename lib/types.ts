@@ -61,6 +61,12 @@ export interface Cafe {
   verdict: string;
   /** Public URLs of uploaded photos. May be empty. */
   photos: string[];
+  /**
+   * Optional per-photo item tag, parallel to `photos`. Each entry is the name
+   * of the item that photo shows (matched to `items[].name`), or null for an
+   * untagged photo. Used to stamp the item's score on its share-card slide.
+   */
+  photoTags?: (string | null)[];
   /** Optional map coordinates (WGS84). Null/absent = not pinned yet. */
   lat?: number | null;
   lng?: number | null;
