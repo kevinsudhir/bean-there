@@ -1,41 +1,39 @@
+import {
+  BRICOLAGE_800,
+  NEWSREADER_ITALIC,
+  SPACEMONO_400,
+} from "./ogFontsData";
+
 /**
- * Loads the site's real fonts for server-rendered share images (@vercel/og).
- * The .woff files live in /public/og-fonts and are fetched over HTTP from the
- * same origin — which works in both the edge dev sandbox and production, unlike
- * import.meta.url file reads (which the edge sandbox can't open).
+ * The site's fonts for the server-rendered share card, decoded from embedded
+ * base64. No fetch and no disk read, so it behaves the same on the edge dev
+ * sandbox and on Railway — the HTTP self-fetch this replaced hung in prod.
  *
  * Bricolage Grotesque = display, Newsreader italic = the verdict "voice",
- * Space Mono = the little uppercase labels. Cached after the first load.
+ * Space Mono = the little uppercase labels.
  */
 type OgFont = {
   name: string;
   data: ArrayBuffer;
-  weight: 400 | 700 | 800;
+  weight: 400 | 800;
   style: "normal" | "italic";
 };
 
+function decode(b64: string): ArrayBuffer {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+
 let cache: OgFont[] | null = null;
 
-export async function loadOgFonts(origin: string): Promise<OgFont[]> {
+export function loadOgFonts(): OgFont[] {
   if (cache) return cache;
-  const grab = (file: string) =>
-    fetch(`${origin}/og-fonts/${file}`).then((r) => {
-      if (!r.ok) throw new Error(`Failed to load font ${file}`);
-      return r.arrayBuffer();
-    });
-  const [b8, b7, ni, s4, s7] = await Promise.all([
-    grab("bricolage-800.woff"),
-    grab("bricolage-700.woff"),
-    grab("newsreader-italic.woff"),
-    grab("spacemono-400.woff"),
-    grab("spacemono-700.woff"),
-  ]);
   cache = [
-    { name: "Bricolage", data: b8, weight: 800, style: "normal" },
-    { name: "Bricolage", data: b7, weight: 700, style: "normal" },
-    { name: "Newsreader", data: ni, weight: 400, style: "italic" },
-    { name: "SpaceMono", data: s4, weight: 400, style: "normal" },
-    { name: "SpaceMono", data: s7, weight: 700, style: "normal" },
+    { name: "Bricolage", data: decode(BRICOLAGE_800), weight: 800, style: "normal" },
+    { name: "Newsreader", data: decode(NEWSREADER_ITALIC), weight: 400, style: "italic" },
+    { name: "SpaceMono", data: decode(SPACEMONO_400), weight: 400, style: "normal" },
   ];
   return cache;
 }

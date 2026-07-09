@@ -14,6 +14,9 @@ import { loadOgFonts } from "@/lib/ogFonts";
  * site's own fonts. Edge runtime (the node build of @vercel/og crashes on
  * Windows paths, and edge is what the other OG routes use).
  */
+// Edge runtime: @vercel/og's node build crashes on Windows paths, and the edge
+// sandbox is what renders reliably. Fonts are embedded (no self-fetch, which
+// hung on Railway) and photos are fetched by Satori directly from their URL.
 export const runtime = "edge";
 
 const CREAM = "#f1eadc";
@@ -114,18 +117,13 @@ function Badge({ overall, size }: { overall: number; size: number }) {
  */
 async function safeImage(url: string): Promise<string | null> {
   try {
-    const r = await fetch(url);
+    const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
     const ct = (r.headers.get("content-type") || "").toLowerCase();
+    const len = Number(r.headers.get("content-length") || "0");
+    r.body?.cancel(); // we only needed the headers; Satori fetches the body
     if (!r.ok || !/image\/(jpeg|jpg|png|webp)/.test(ct)) return null;
-    const buf = await r.arrayBuffer();
-    if (buf.byteLength > 6_000_000) return null;
-    const bytes = new Uint8Array(buf);
-    let bin = "";
-    const chunk = 0x8000;
-    for (let i = 0; i < bytes.length; i += chunk) {
-      bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
-    }
-    return `data:${ct};base64,${btoa(bin)}`;
+    if (len && len > 5_000_000) return null; // skip huge undownscaled photos
+    return url;
   } catch {
     return null;
   }
@@ -164,10 +162,10 @@ export async function GET(
   if (!slide) return new Response("No such slide", { status: 404 });
 
   const overall = overallScore(cafe.scores);
-  // Fonts are a nice-to-have — never let a font hiccup 500 the whole card.
-  let fonts: Awaited<ReturnType<typeof loadOgFonts>> = [];
+  // Fonts are a nice-to-have — never let a font hiccup break the whole card.
+  let fonts: ReturnType<typeof loadOgFonts> = [];
   try {
-    fonts = await loadOgFonts(new URL(req.url).origin);
+    fonts = loadOgFonts();
   } catch {
     fonts = [];
   }
