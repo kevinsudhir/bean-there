@@ -263,10 +263,10 @@ export async function GET(
                         background: "rgba(0,0,0,0.25)",
                       }}
                     >
-                      <span style={{ fontFamily: "SpaceMono", fontSize: 26, color: "rgba(255,255,255,0.85)" }}>
+                      <span style={{ fontFamily: "SpaceMono", fontSize: 26, lineHeight: 1, color: "rgba(255,255,255,0.85)" }}>
                         {cat.toUpperCase()}
                       </span>
-                      <span style={{ fontFamily: "Bricolage", fontWeight: 800, fontSize: 26, color: "#fff" }}>
+                      <span style={{ fontFamily: "Bricolage", fontWeight: 800, fontSize: 26, lineHeight: 1, color: "#fff" }}>
                         {(cafe.scores[cat] ?? 0).toFixed(1)}
                       </span>
                     </div>
