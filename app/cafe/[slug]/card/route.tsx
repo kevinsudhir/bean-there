@@ -156,7 +156,14 @@ export async function GET(
   } catch {
     fonts = [];
   }
-  const opts = { width: W, height: H, fonts };
+  // no-store: the card reflects the café's current data + design, so never let
+  // a browser or CDN serve a stale render after an edit or a layout change.
+  const opts = {
+    width: W,
+    height: H,
+    fonts,
+    headers: { "Cache-Control": "no-store, max-age=0" },
+  };
 
   // ---- photo-backed slides (cover + extra photos) ----
   if (slide.kind === "cover" || slide.kind === "photo") {

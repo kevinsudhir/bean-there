@@ -41,21 +41,36 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
   const slideCount = buildSlides(cafe).length;
 
 
-  // Download every carousel slide to the device as a numbered PNG. This is the
-  // "Save images" action — it always saves, never opens the share sheet (that's
-  // what the separate Share button is for).
+  // Fetch every carousel slide as a PNG file. Cache-busted (?t=) and no-store
+  // so an edited café — or a design change — never serves a stale image.
+  async function fetchSlides(): Promise<File[]> {
+    const bust = Date.now();
+    const files: File[] = [];
+    for (let i = 0; i < slideCount; i++) {
+      const res = await fetch(`/cafe/${cafe.slug}/card?i=${i}&t=${bust}`, {
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error("Couldn't render a slide.");
+      files.push(
+        new File([await res.blob()], `${cafe.slug}-${i + 1}.png`, {
+          type: "image/png",
+        }),
+      );
+    }
+    return files;
+  }
+
+  // "Save images" — always downloads the carousel to the device.
   async function saveImages() {
     setImgBusy(true);
     try {
-      for (let i = 0; i < slideCount; i++) {
-        const res = await fetch(`/cafe/${cafe.slug}/card?i=${i}`);
-        if (!res.ok) throw new Error("Couldn't render a slide.");
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
+      const files = await fetchSlides();
+      for (const file of files) {
+        const url = URL.createObjectURL(file);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${cafe.slug}-${i + 1}.png`;
-        document.body.appendChild(a); // some browsers require it to be in the DOM
+        a.download = file.name;
+        document.body.appendChild(a); // some browsers require it in the DOM
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
@@ -63,47 +78,43 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
         await new Promise((r) => setTimeout(r, 400));
       }
     } catch {
-      // Fallback: open the first slide so the user can long-press / right-click
-      // to save it manually.
       window.open(`/cafe/${cafe.slug}/card?i=0`, "_blank");
     } finally {
       setImgBusy(false);
     }
   }
 
-  // Share the carousel images to other apps (Instagram, WhatsApp…) where the
-  // browser supports sharing files — mainly phones. Falls back to sharing the
-  // café link. Shown as the "Share" button.
+  // "Share" — sends the carousel images AND the café link together where the
+  // browser supports it (phones), so recipients get the pictures plus a
+  // tappable link that previews the cover photo. Falls back to sharing or
+  // copying just the link.
   async function shareImages() {
     const link = `${window.location.origin}/cafe/${cafe.slug}`;
+    const text = `${cafe.name} — ${SITE.title}`;
     try {
       const probe = new File(["x"], "x.png", { type: "image/png" });
       if (navigator.canShare?.({ files: [probe] })) {
         setImgBusy(true);
-        const files: File[] = [];
-        for (let i = 0; i < slideCount; i++) {
-          const res = await fetch(`/cafe/${cafe.slug}/card?i=${i}`);
-          if (!res.ok) throw new Error();
-          files.push(
-            new File([await res.blob()], `${cafe.slug}-${i + 1}.png`, {
-              type: "image/png",
-            }),
-          );
-        }
+        const files = await fetchSlides();
         setImgBusy(false);
+        // Prefer images + link together; fall back to images only.
+        if (navigator.canShare({ files, text, url: link })) {
+          await navigator.share({ files, text, url: link, title: text });
+          return;
+        }
         if (navigator.canShare({ files })) {
-          await navigator.share({ files, title: cafe.name });
+          await navigator.share({ files, title: text });
           return;
         }
       }
     } catch {
       setImgBusy(false);
-      return; // user dismissed, or sharing failed — fall through to link
+      return; // user dismissed, or the fetch failed
     }
-    // No file sharing available: share or copy the café link instead.
+    // No file sharing here: share or copy the link (its preview is the cover).
     if (navigator.share) {
       try {
-        await navigator.share({ title: `${cafe.name} — ${SITE.title}`, url: link });
+        await navigator.share({ title: text, text, url: link });
         return;
       } catch {
         return;
