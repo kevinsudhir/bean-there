@@ -226,9 +226,11 @@ export async function GET(
           <div style={{ position: "absolute", top: 56, left: 72, display: "flex" }}>
             <Wordmark color="#fff" />
           </div>
-          {badgeValue !== null && (
+          {/* Cover shows the overall score top-right; per-item photos put the
+              item's rating beside the item name at the bottom instead. */}
+          {isCover && (
             <div style={{ position: "absolute", top: 52, right: 72, display: "flex" }}>
-              <Badge value={badgeValue} size={isCover ? 150 : 130} />
+              <Badge value={overall} size={150} />
             </div>
           )}
           <div
@@ -255,11 +257,11 @@ export async function GET(
                       key={cat}
                       style={{
                         display: "flex",
-                        alignItems: "center",
+                        alignItems: "baseline",
                         gap: 8,
                         border: "2px solid rgba(255,255,255,0.5)",
                         borderRadius: 999,
-                        padding: "8px 18px",
+                        padding: "10px 18px",
                         background: "rgba(0,0,0,0.25)",
                       }}
                     >
@@ -274,9 +276,17 @@ export async function GET(
                 </div>
               </div>
             ) : slide.item ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 16, fontFamily: "Bricolage", fontWeight: 800, fontSize: 72, lineHeight: 1, color: "#fff" }}>
-                {slide.item.name}
-                {slide.item.star ? <Star size={44} color="#fff" /> : null}
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, fontFamily: "Bricolage", fontWeight: 800, fontSize: 66, lineHeight: 1, color: "#fff", maxWidth: 720 }}>
+                    {slide.item.name}
+                    {slide.item.star ? <Star size={40} color="#fff" /> : null}
+                  </div>
+                  <Badge value={slide.item.rating} size={104} />
+                </div>
+                <div style={{ display: "flex", fontFamily: "SpaceMono", fontSize: 26, letterSpacing: 2, color: "rgba(255,255,255,0.85)" }}>
+                  {cafe.name.toUpperCase()}
+                </div>
               </div>
             ) : (
               <div style={{ display: "flex", fontFamily: "SpaceMono", fontSize: 26, letterSpacing: 2, color: "rgba(255,255,255,0.9)" }}>
