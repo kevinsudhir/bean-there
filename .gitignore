@@ -24,3 +24,7 @@ tsconfig.tsbuildinfo
 *.pem
 .vercel
 next-env.d.ts
+
+# stray downloaded images at repo root
+beanthere_logo.png
+*.download.png
