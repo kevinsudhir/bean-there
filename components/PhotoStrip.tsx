@@ -6,7 +6,7 @@ export default function PhotoStrip({
   onOpen,
 }: {
   photos: string[];
-  onOpen: (src: string) => void;
+  onOpen: (index: number) => void;
 }) {
   if (photos.length === 0) return null;
 
@@ -15,7 +15,7 @@ export default function PhotoStrip({
       {photos.map((src, i) => (
         <button
           key={i}
-          onClick={() => onOpen(src)}
+          onClick={() => onOpen(i)}
           aria-label={`Enlarge photo ${i + 1}`}
           className="h-[168px] w-[126px] flex-none snap-start rounded-xl border-[1.5px] border-line bg-cover bg-center transition-transform hover:scale-[1.02]"
           style={{ backgroundImage: `url('${src}')` }}

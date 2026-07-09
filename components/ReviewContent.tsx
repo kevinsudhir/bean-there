@@ -31,7 +31,7 @@ const whoLabel: Record<Who, string> = {
  * It owns the `lightbox` state because the photo strip lives inside it.
  */
 export default function ReviewContent({ cafe }: { cafe: Cafe }) {
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [imgBusy, setImgBusy] = useState(false);
   const { session } = useAuth();
@@ -247,7 +247,12 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
         )}
       </div>
 
-      <Lightbox src={lightbox} onClose={() => setLightbox(null)} />
+      <Lightbox
+        photos={cafe.photos}
+        index={lightbox}
+        onClose={() => setLightbox(null)}
+        onIndex={setLightbox}
+      />
     </>
   );
 }
