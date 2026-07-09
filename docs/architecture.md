@@ -1,8 +1,8 @@
-# Bean There — Mental Model Cheat Sheet
+# Bean There — Architecture &amp; Mental Model
 
 A one-page map of the whole project. Read this before an interview.
 
-> This is the source; `cheatsheet.html` is the same content as a styled,
+> This is the source; `architecture.html` is the same content as a styled,
 > theme-aware page you can open in a browser. Keep the two in sync.
 
 ---
