@@ -114,7 +114,7 @@
     <h1>Cheat Sheet
       <svg class="bean" viewBox="0 0 40 50"><ellipse cx="20" cy="25" rx="15" ry="23" fill="var(--amber)"/><path d="M20,4 C12,16 12,34 20,46" fill="none" stroke="var(--bg)" stroke-width="3.4"/></svg>
     </h1>
-    <p class="sub">The whole app in one page. Skim it before an interview.</p>
+    <p class="sub">The whole app in one page. Skim it before an interview.<br><span style="font-size:12px">Rendered twin of <span class="mono">docs/cheatsheet.md</span> — keep the two in sync.</span></p>
   </header>
 
   <!-- 1. Big idea -->
@@ -154,27 +154,32 @@
     <div class="cols">
       <div class="col">
         <h3>lib/</h3><div class="tag">the brain</div>
-        <div class="file"><div class="fn">types.ts</div><div class="fd">The <b>shape</b> of data (the Cafe contract). Change data shape here.</div></div>
-        <div class="file"><div class="fn">config.ts</div><div class="fd">Settings + all site <b>text</b>: tagline, title, reviewers, badgeThreshold + scoring logic.</div></div>
-        <div class="file"><div class="fn">sample-data.ts</div><div class="fd">The actual sample café <b>data</b>.</div></div>
-        <div class="file"><div class="fn">cafes.ts / supabase.ts</div><div class="fd"><b>Where</b> data comes from (DB or fallback).</div></div>
+        <div class="file"><div class="fn">types.ts</div><div class="fd">The <b>shape</b> of data (Cafe: items, photos, photoTags, lat/lng). Change data shape here.</div></div>
+        <div class="file"><div class="fn">config.ts</div><div class="fd">Settings + all site <b>text</b>: title, tagline, reviewers, badgeThreshold, city + scoring, slug, maps-link.</div></div>
+        <div class="file"><div class="fn">sample-data.ts</div><div class="fd">Sample café <b>data</b> (fallback when Supabase is off).</div></div>
+        <div class="file"><div class="fn">cafes.ts / supabase.ts</div><div class="fd"><b>Where</b> data comes from + writes (get/create/update/delete).</div></div>
+        <div class="file"><div class="fn">upload.ts / actions.ts</div><div class="fd">Photo upload to Storage; revalidate server action after writes.</div></div>
         <div class="file"><div class="fn">useFilteredCafes.ts</div><div class="fd">Shared search/sort/filter logic (custom hook).</div></div>
+        <div class="file"><div class="fn">shareSlides / cupSvg / ogFonts</div><div class="fd">Share-card carousel model, cup SVGs, embedded fonts.</div></div>
       </div>
       <div class="col">
         <h3>components/</h3><div class="tag">the body</div>
-        <div class="file"><div class="fn">CupIcon</div><div class="fd">Draws a cup/muffin filled to a score. Shape = <span class="mono">type</span>, fill = <span class="mono">fill</span>, size = <span class="mono">size</span> (default 120).</div></div>
-        <div class="file"><div class="fn">CafeCard</div><div class="fd">One café on the wall. Uses CupIcon + overallScore/isLoved.</div></div>
-        <div class="file"><div class="fn">ReviewModal</div><div class="fd">The full review popup.</div></div>
-        <div class="file"><div class="fn">Controls</div><div class="fd">Search + sort + area + badge filter + theme.</div></div>
-        <div class="file"><div class="fn">AddCafeForm</div><div class="fd">No-code form; writes via createCafe.</div></div>
-        <div class="file"><div class="fn">ThemeProvider / Toggle</div><div class="fd">Light/dark via React Context.</div></div>
+        <div class="file"><div class="fn">CupIcon / WallCup</div><div class="fd">Draw a cup/glass/muffin/cloche filled to a score (<span class="mono">type</span>, <span class="mono">fill</span>, <span class="mono">size</span>).</div></div>
+        <div class="file"><div class="fn">CafeCard / CafeListRow / CafeMap</div><div class="fd">A café as a card, a compact row, or a pin on the Leaflet map.</div></div>
+        <div class="file"><div class="fn">Wall → Desktop/MobileWall</div><div class="fd">Owns shared state; CSS picks desktop (modal) vs mobile (sheet).</div></div>
+        <div class="file"><div class="fn">ReviewContent</div><div class="fd">The review body (shared by modal + sheet) + Save/Share carousel.</div></div>
+        <div class="file"><div class="fn">Controls / MobileControls</div><div class="fd">Search, sort, area, Loved, Grid/List/Map, theme.</div></div>
+        <div class="file"><div class="fn">AddCafeForm</div><div class="fd">No-code add/edit; photo upload + tagging + cover; create/update/delete.</div></div>
+        <div class="file"><div class="fn">Auth/Theme Providers</div><div class="fd">Login + light/dark via Context; RequireAuth guards pages.</div></div>
       </div>
       <div class="col">
         <h3>app/</h3><div class="tag">the skeleton</div>
-        <div class="file"><div class="fn">page.tsx</div><div class="fd">Home — fetches cafés (server), renders the wall.</div></div>
-        <div class="file"><div class="fn">layout.tsx</div><div class="fd">Wraps every page: fonts + ThemeProvider.</div></div>
-        <div class="file"><div class="fn">add/page.tsx</div><div class="fd">The "Add a café" route.</div></div>
+        <div class="file"><div class="fn">page.tsx / layout.tsx</div><div class="fd">Home fetches cafés (server); layout wraps fonts + providers + OG.</div></div>
+        <div class="file"><div class="fn">add + cafe/[slug]/edit</div><div class="fd">Auth-guarded add / edit routes.</div></div>
         <div class="file"><div class="fn">cafe/[slug]/page.tsx</div><div class="fd">A shareable page per café (/cafe/pollen).</div></div>
+        <div class="file"><div class="fn">cafe/[slug]/card/route.tsx</div><div class="fd">Renders a carousel slide as a 1080×1350 PNG (<span class="mono">?i=N</span>).</div></div>
+        <div class="file"><div class="fn">api/verdict/route.ts</div><div class="fd">Server route: drafts a verdict via Gemini (key stays server-side).</div></div>
+        <div class="file"><div class="fn">opengraph-image / logo / icon</div><div class="fd">Link-preview card, downloadable logo, favicon.</div></div>
         <div class="file"><div class="fn">globals.css</div><div class="fd">Design tokens — all colours, light + dark, in one place.</div></div>
       </div>
     </div>
@@ -242,6 +247,8 @@
         <tr><td>Reviewer names</td><td><code>lib/config.ts</code></td><td><span class="mono">SITE.reviewers</span></td></tr>
         <tr><td>Add 6th score (wifi)</td><td><code>lib/types.ts</code></td><td>add to <span class="mono">SCORE_CATEGORIES</span> — TS flags the rest</td></tr>
         <tr><td>New sort option</td><td><code>Controls.tsx</code> + <code>useFilteredCafes.ts</code></td><td>add SortKey + SORTS entry + else-if branch</td></tr>
+        <tr><td>Change a share-card slide</td><td><code>cafe/[slug]/card/route.tsx</code></td><td>edit the slide JSX; <span class="mono">shareSlides.ts</span> sets the order</td></tr>
+        <tr><td>New home city</td><td><code>lib/config.ts</code></td><td><span class="mono">SITE.city</span> (feeds map search)</td></tr>
       </table>
     </div>
   </section>
@@ -265,12 +272,29 @@
     </div>
   </section>
 
-  <!-- 8. One breath -->
+  <!-- 8. Feature subsystems -->
   <section>
-    <h2><span class="n">8</span> The stack, in one breath</h2>
+    <h2><span class="n">8</span> Feature subsystems</h2>
+    <p class="lead">The parts beyond the wall — what each does and where it lives.</p>
+    <div class="card">
+      <table>
+        <tr><th>Subsystem</th><th>How it works</th><th>Files</th></tr>
+        <tr><td><b>Auth</b></td><td>Supabase magic-link sign-in; context tracks the session; UI hides when logged out. The real guard is Row-Level Security in the DB.</td><td><span class="mono">login</span>, <span class="mono">AuthProvider</span>, <span class="mono">RequireAuth</span>, <span class="mono">schema.sql</span></td></tr>
+        <tr><td><b>Writes</b></td><td>Form → create/update/delete → Supabase; then a server action revalidates the cached pages.</td><td><span class="mono">AddCafeForm</span>, <span class="mono">cafes.ts</span>, <span class="mono">actions.ts</span></td></tr>
+        <tr><td><b>Photos</b></td><td>Client downscales to ~1600px JPEG → upload to Storage; each photo can be tagged to an item.</td><td><span class="mono">upload.ts</span>, <span class="mono">AddCafeForm</span></td></tr>
+        <tr><td><b>Map</b></td><td>Leaflet + free OSM/Carto tiles (no key); cafés carry optional lat/lng; pins show the score.</td><td><span class="mono">CafeMap</span>, <span class="mono">types.ts</span></td></tr>
+        <tr><td><b>Share carousel</b></td><td>buildSlides → card route renders each slide as a PNG with @vercel/og (Satori), embedded fonts + cup SVGs.</td><td><span class="mono">shareSlides</span>, <span class="mono">card/route.tsx</span>, <span class="mono">ReviewContent</span></td></tr>
+        <tr><td><b>AI verdict</b></td><td>Client posts scores/items → server route adds the secret key → Gemini → text.</td><td><span class="mono">api/verdict</span>, <span class="mono">AddCafeForm</span></td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- 9. One breath -->
+  <section>
+    <h2><span class="n">9</span> The stack, in one breath</h2>
     <div class="oneliner">
       <span class="h">If they say "tell me about this project"</span>
-      "It's a Next.js App Router app in React + TypeScript, styled with Tailwind wired to CSS-variable design tokens, with Supabase for the database, photo storage, and auth. I fetch on the server and pass data to client components for interactivity. Business rules and the data shape each live in one place, so changes are localized and the type system catches anything I miss."
+      "It's a Next.js App Router app in React + TypeScript, styled with Tailwind wired to CSS-variable design tokens, on Supabase for the database, photo storage, and magic-link auth. I fetch on the server and pass data to client components for interactivity; writes go through a server action that revalidates the cache. It also has a Leaflet map, AI-drafted verdicts via a server-side Gemini route, and shareable Instagram cards rendered as images with @vercel/og. Business rules and the data shape each live in one place, so changes are localized and the type system catches anything I miss."
     </div>
   </section>
 
