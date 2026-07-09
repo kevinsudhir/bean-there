@@ -84,40 +84,18 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
     }
   }
 
-  // "Share" — sends the carousel images AND the café link together where the
-  // browser supports it (phones), so recipients get the pictures plus a
-  // tappable link that previews the cover photo. Falls back to sharing or
-  // copying just the link.
-  async function shareImages() {
+  // "Share" — sends just the café link. Its preview shows the cover photo
+  // (set via the per-café Open Graph image). Native share sheet where
+  // available, otherwise copies the link to the clipboard.
+  async function shareLink() {
     const link = `${window.location.origin}/cafe/${cafe.slug}`;
     const text = `${cafe.name} — ${SITE.title}`;
-    try {
-      const probe = new File(["x"], "x.png", { type: "image/png" });
-      if (navigator.canShare?.({ files: [probe] })) {
-        setImgBusy(true);
-        const files = await fetchSlides();
-        setImgBusy(false);
-        // Prefer images + link together; fall back to images only.
-        if (navigator.canShare({ files, text, url: link })) {
-          await navigator.share({ files, text, url: link, title: text });
-          return;
-        }
-        if (navigator.canShare({ files })) {
-          await navigator.share({ files, title: text });
-          return;
-        }
-      }
-    } catch {
-      setImgBusy(false);
-      return; // user dismissed, or the fetch failed
-    }
-    // No file sharing here: share or copy the link (its preview is the cover).
     if (navigator.share) {
       try {
         await navigator.share({ title: text, text, url: link });
         return;
       } catch {
-        return;
+        return; // user dismissed — not an error
       }
     }
     try {
@@ -234,9 +212,8 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
 
       <div className="flex flex-wrap items-center justify-center gap-2.5">
         <button
-          onClick={shareImages}
-          disabled={imgBusy}
-          className="rounded-pill border-[1.5px] border-line px-4 py-2 font-mono text-[10px] uppercase tracking-wide text-ink hover:border-ink disabled:opacity-40"
+          onClick={shareLink}
+          className="rounded-pill border-[1.5px] border-line px-4 py-2 font-mono text-[10px] uppercase tracking-wide text-ink hover:border-ink"
         >
           {copied ? "Link copied ✓" : "Share"}
         </button>

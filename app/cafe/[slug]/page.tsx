@@ -30,8 +30,8 @@ export async function generateMetadata({
     openGraph: {
       title: `${cafe.name} — Bean There`,
       description: cafe.verdict || undefined,
-      // First review photo as the share card, when there is one; otherwise
-      // the site-wide opengraph-image is used automatically.
+      // The cover photo (first in the list) as the link preview, when there is
+      // one; otherwise the site-wide opengraph-image is used automatically.
       images: cafe.photos.length > 0 ? [cafe.photos[0]] : undefined,
     },
   };
