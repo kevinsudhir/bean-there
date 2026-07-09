@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getCafeBySlug } from "@/lib/cafes";
+import { supabase } from "@/lib/supabase";
 import { overallScore, SITE } from "@/lib/config";
 import { SCORE_CATEGORIES } from "@/lib/types";
 import type { Who } from "@/lib/types";
@@ -140,6 +141,20 @@ export async function GET(
   req: Request,
   { params }: { params: { slug: string } },
 ) {
+  // Owners only: the card is a publishing tool and rendering it is CPU-heavy,
+  // so require a valid Supabase login token. In local/demo mode (no Supabase)
+  // there are no accounts, so it stays open.
+  if (supabase) {
+    const header = req.headers.get("authorization");
+    const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
+    const { data, error } = token
+      ? await supabase.auth.getUser(token)
+      : { data: { user: null }, error: null };
+    if (error || !data.user) {
+      return new Response("Sign in to generate share cards.", { status: 401 });
+    }
+  }
+
   const cafe = await getCafeBySlug(params.slug);
   if (!cafe) return new Response("Not found", { status: 404 });
 

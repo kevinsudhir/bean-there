@@ -45,10 +45,15 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
   // so an edited café — or a design change — never serves a stale image.
   async function fetchSlides(): Promise<File[]> {
     const bust = Date.now();
+    // The card route is owner-only; send the login token so it authorises.
+    const headers: HeadersInit = session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : {};
     const files: File[] = [];
     for (let i = 0; i < slideCount; i++) {
       const res = await fetch(`/cafe/${cafe.slug}/card?i=${i}&t=${bust}`, {
         cache: "no-store",
+        headers,
       });
       if (!res.ok) throw new Error("Couldn't render a slide.");
       files.push(
@@ -78,7 +83,7 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
         await new Promise((r) => setTimeout(r, 400));
       }
     } catch {
-      window.open(`/cafe/${cafe.slug}/card?i=0`, "_blank");
+      // Rare (network/render error); the button just re-enables to retry.
     } finally {
       setImgBusy(false);
     }
