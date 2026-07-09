@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { SITE } from "@/lib/config";
 import type { FilterState, SortKey } from "./Controls";
-import { useTheme } from "./ThemeProvider";
 
 export type MobileView = "list" | "gallery" | "map";
 
@@ -41,7 +40,7 @@ const SORTS: { key: SortKey; label: string }[] = [
 
 /**
  * Mobile filter bar: an always-visible search, a segmented All/Loved toggle,
- * a "More" button that expands a panel (Sort, Area, Theme), and a single button
+ * a "More" button that expands a panel (Sort, Area), and a single button
  * that flips between list and gallery views.
  *
  * The filter values live in the parent (passed as `state`/`onChange`). The only
@@ -61,7 +60,6 @@ export default function MobileControls({
   onView: (v: MobileView) => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
-  const { theme, toggle } = useTheme();
 
   const set = (patch: Partial<FilterState>) => onChange({ ...state, ...patch });
 
@@ -170,26 +168,6 @@ export default function MobileControls({
                   {a}
                 </button>
               ))}
-            </div>
-          </div>
-
-          <div>
-            <div className="mb-2 font-mono text-[9px] uppercase tracking-widest text-dim">
-              Theme
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => theme === "dark" && toggle()}
-                className={chip(theme === "light")}
-              >
-                ☀ Light
-              </button>
-              <button
-                onClick={() => theme === "light" && toggle()}
-                className={chip(theme === "dark")}
-              >
-                ☾ Dark
-              </button>
             </div>
           </div>
         </div>

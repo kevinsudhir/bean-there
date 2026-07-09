@@ -1,14 +1,17 @@
 "use client";
 
 import { SITE } from "@/lib/config";
+import ThemeToggle from "./ThemeToggle";
 
 /**
  * Site header: the kicker lines, the big "Bean There" title with the amber bean
  * glyph (which reveals the "Our Order" note on hover/focus), and the tagline.
+ * On mobile the theme toggle sits top-right here (desktop has it in Controls).
  */
 export default function Header() {
   return (
-    <header className="overflow-x-clip px-6 pt-9 sm:px-16">
+    <header className="relative overflow-x-clip px-6 pt-9 sm:px-16">
+      <ThemeToggle className="absolute right-5 top-5 md:hidden" />
       <div className="flex flex-col gap-1 font-mono text-[11px] uppercase tracking-[0.16em] text-amber sm:flex-row sm:justify-between">
         <span>{SITE.kickerLeft}</span>
         <span>{SITE.kickerRight}</span>
