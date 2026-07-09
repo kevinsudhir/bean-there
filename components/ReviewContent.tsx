@@ -217,17 +217,21 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
         >
           {copied ? "Link copied ✓" : "Share"}
         </button>
-        <button
-          onClick={saveImages}
-          disabled={imgBusy}
-          className="rounded-pill border-[1.5px] border-line px-4 py-2 font-mono text-[10px] uppercase tracking-wide text-ink hover:border-ink disabled:opacity-40"
-        >
-          {imgBusy
-            ? "Making images…"
-            : slideCount > 1
-              ? `Save ${slideCount} images`
-              : "Save image"}
-        </button>
+        {/* Save images is a publishing tool (the Instagram carousel), so it's
+            only for signed-in owners — visitors get the Share link. */}
+        {session && (
+          <button
+            onClick={saveImages}
+            disabled={imgBusy}
+            className="rounded-pill border-[1.5px] border-line px-4 py-2 font-mono text-[10px] uppercase tracking-wide text-ink hover:border-ink disabled:opacity-40"
+          >
+            {imgBusy
+              ? "Making images…"
+              : slideCount > 1
+                ? `Save ${slideCount} images`
+                : "Save image"}
+          </button>
+        )}
         {session && (
           <Link
             href={`/cafe/${cafe.slug}/edit`}
