@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Cafe, CafeItem, ItemType, Scores, Who } from "@/lib/types";
 import { SCORE_CATEGORIES } from "@/lib/types";
@@ -71,6 +71,12 @@ async function downscaleImage(file: File): Promise<File> {
   }
 }
 
+// A photo in the form: either one already saved (URL) or a newly picked file.
+// `url` is the src to preview (public URL, or an object URL for new files).
+type PhotoEntry =
+  | { kind: "existing"; url: string; tag: string | null }
+  | { kind: "new"; file: File; url: string; tag: string | null };
+
 const label = "mb-1.5 block font-mono text-xs uppercase tracking-wide text-dim";
 const field =
   "w-full min-w-0 max-w-full rounded-lg border-[1.5px] border-line bg-transparent px-3 py-2.5 text-sm text-ink outline-none focus:border-ink";
@@ -108,16 +114,16 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
   const [verdict, setVerdict] = useState(existing?.verdict ?? "");
   const [drafting, setDrafting] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
-  // Existing photos are editable (removable) in edit mode; new files append.
-  const [existingPhotos, setExistingPhotos] = useState<string[]>(
-    existing?.photos ?? [],
+  // All photos as one ordered list (saved URLs + newly picked files), each with
+  // its item tag. The first entry is the cover; the order is chosen in the UI.
+  const [photos, setPhotos] = useState<PhotoEntry[]>(
+    (existing?.photos ?? []).map((url, i) => ({
+      kind: "existing" as const,
+      url,
+      tag: existing?.photoTags?.[i] ?? null,
+    })),
   );
-  // Per-photo item tag (item name or null), kept parallel to the photo arrays.
-  const [existingPhotoTags, setExistingPhotoTags] = useState<(string | null)[]>(
-    (existing?.photos ?? []).map((_, i) => existing?.photoTags?.[i] ?? null),
-  );
-  const [files, setFiles] = useState<File[]>([]);
-  const [fileTags, setFileTags] = useState<(string | null)[]>([]);
+  const objectUrls = useRef<string[]>([]);
   // Optional map pin. Found via the geocoder button or typed in manually.
   const [lat, setLat] = useState<number | null>(existing?.lat ?? null);
   const [lng, setLng] = useState<number | null>(existing?.lng ?? null);
@@ -133,15 +139,29 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
   // Item names that a photo can be tagged with (drives the tag dropdowns).
   const itemNames = items.map((it) => it.name.trim()).filter(Boolean);
 
-  // Object URLs for previewing newly-picked files; revoked when they change.
-  const filePreviews = useMemo(
-    () => files.map((f) => URL.createObjectURL(f)),
-    [files],
-  );
-  useEffect(
-    () => () => filePreviews.forEach((u) => URL.revokeObjectURL(u)),
-    [filePreviews],
-  );
+  // Revoke any object URLs created for new-file previews when we unmount.
+  useEffect(() => () => objectUrls.current.forEach(URL.revokeObjectURL), []);
+
+  const addFiles = (list: File[]) =>
+    setPhotos((p) => [
+      ...p,
+      ...list.map((file) => {
+        const url = URL.createObjectURL(file);
+        objectUrls.current.push(url);
+        return { kind: "new" as const, file, url, tag: null };
+      }),
+    ]);
+  const removePhoto = (i: number) =>
+    setPhotos((p) => p.filter((_, j) => j !== i));
+  const makeCover = (i: number) =>
+    setPhotos((p) => {
+      const next = [...p];
+      const [chosen] = next.splice(i, 1);
+      next.unshift(chosen);
+      return next;
+    });
+  const setPhotoTag = (i: number, tag: string | null) =>
+    setPhotos((p) => p.map((e, j) => (j === i ? { ...e, tag } : e)));
 
   // A small "tag this photo with an item" dropdown, shared by both photo lists.
   const tagSelect = (value: string | null, onChange: (v: string | null) => void) => (
@@ -297,13 +317,17 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
     }
     setSaving(true);
     try {
-      // Kept existing photos (edit mode, minus removed), plus newly chosen
-      // ones — with their item tags kept parallel to the photo array.
-      const photos: string[] = [...existingPhotos];
-      const photoTags: (string | null)[] = [...existingPhotoTags];
-      for (let k = 0; k < files.length; k++) {
-        photos.push(await uploadPhoto(await downscaleImage(files[k])));
-        photoTags.push(fileTags[k] ?? null);
+      // Walk the ordered photo list: keep existing URLs as-is, upload new
+      // files (downscaled), preserving order and item tags throughout.
+      const photoUrls: string[] = [];
+      const photoTags: (string | null)[] = [];
+      for (const entry of photos) {
+        photoUrls.push(
+          entry.kind === "existing"
+            ? entry.url
+            : await uploadPhoto(await downscaleImage(entry.file)),
+        );
+        photoTags.push(entry.tag);
       }
 
       const payload = {
@@ -313,7 +337,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
         scores,
         items: items.filter((it) => it.name.trim()),
         verdict: verdict.trim(),
-        photos,
+        photos: photoUrls,
         // Only send lat/lng and photoTags when they carry something (or the
         // café already had them) — a database that predates these columns
         // would otherwise reject every save.
@@ -420,29 +444,28 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
               accept="image/*"
               multiple
               onChange={(e) => {
-                const list = Array.from(e.target.files ?? []);
-                setFiles(list);
-                setFileTags(list.map(() => null));
+                addFiles(Array.from(e.target.files ?? []));
+                e.target.value = ""; // allow re-picking / adding more
               }}
               className={`${field} file:mr-3 file:rounded file:border-0 file:bg-ink file:px-3 file:py-1 file:text-bg`}
             />
           </div>
         </div>
 
-        {(existingPhotos.length > 0 || filePreviews.length > 0) && (
+        {photos.length > 0 && (
           <div>
             <label className={label}>
-              Photos — tag each with the item it shows (for the share carousel)
+              Photos — pick the cover and tag each with the item it shows
             </label>
             <div className="flex flex-wrap gap-3">
-              {existingPhotos.map((src, i) => (
-                <div key={src} className="flex flex-col items-center">
+              {photos.map((p, i) => (
+                <div key={p.url} className="flex flex-col items-center gap-1">
                   <div className="relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={src}
-                      alt="Review photo"
-                      className="h-24 w-[76px] rounded-lg border-[1.5px] border-line object-cover"
+                      src={p.url}
+                      alt={p.kind === "new" ? "New photo" : "Review photo"}
+                      className={`h-24 w-[76px] rounded-lg border-[1.5px] object-cover ${p.kind === "new" ? "border-amber" : "border-line"}`}
                     />
                     {i === 0 && (
                       <span className="absolute left-1 top-1 rounded bg-amber px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wide text-white">
@@ -451,48 +474,30 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
                     )}
                     <button
                       type="button"
-                      onClick={() => {
-                        setExistingPhotos((l) => l.filter((_, j) => j !== i));
-                        setExistingPhotoTags((l) => l.filter((_, j) => j !== i));
-                      }}
+                      onClick={() => removePhoto(i)}
                       aria-label="Remove photo"
                       className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] border-line bg-bg text-[10px] text-ink"
                     >
                       ✕
                     </button>
                   </div>
-                  {tagSelect(existingPhotoTags[i] ?? null, (v) =>
-                    setExistingPhotoTags((l) =>
-                      l.map((t, j) => (j === i ? v : t)),
-                    ),
+                  {i !== 0 && (
+                    <button
+                      type="button"
+                      onClick={() => makeCover(i)}
+                      className="font-mono text-[8px] uppercase tracking-wide text-amber"
+                    >
+                      Make cover
+                    </button>
                   )}
-                </div>
-              ))}
-              {filePreviews.map((src, i) => (
-                <div key={src} className="flex flex-col items-center">
-                  <div className="relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={src}
-                      alt="New photo"
-                      className="h-24 w-[76px] rounded-lg border-[1.5px] border-amber object-cover"
-                    />
-                    {existingPhotos.length === 0 && i === 0 && (
-                      <span className="absolute left-1 top-1 rounded bg-amber px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wide text-white">
-                        Cover
-                      </span>
-                    )}
-                  </div>
-                  {tagSelect(fileTags[i] ?? null, (v) =>
-                    setFileTags((l) => l.map((t, j) => (j === i ? v : t))),
-                  )}
+                  {tagSelect(p.tag, (v) => setPhotoTag(i, v))}
                 </div>
               ))}
             </div>
             <p className="mt-1.5 font-mono text-[10px] italic text-dim">
-              Tagged photos get that item&apos;s score on their carousel slide;
-              untagged ones just show the overall score. The first photo is the
-              cover.
+              The cover is the carousel&apos;s first slide. Tagged photos get
+              that item&apos;s score on their slide; untagged ones show the
+              overall score.
             </p>
           </div>
         )}
