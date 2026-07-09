@@ -70,7 +70,9 @@ function Wordmark({ color }: { color: string }) {
   );
 }
 
-function Badge({ overall, size }: { overall: number; size: number }) {
+// A round amber score badge, used for both the café's overall and each item's
+// own rating.
+function Badge({ value, size }: { value: number; size: number }) {
   return (
     <div
       style={{
@@ -94,7 +96,7 @@ function Badge({ overall, size }: { overall: number; size: number }) {
           lineHeight: 1,
         }}
       >
-        {overall.toFixed(1)}
+        {value.toFixed(1)}
       </div>
       <div
         style={{
@@ -129,24 +131,9 @@ async function safeImage(url: string): Promise<string | null> {
   }
 }
 
-function chip(text: string, dark: boolean) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        border: `2px solid ${dark ? "rgba(255,255,255,0.55)" : AMBER}`,
-        borderRadius: 999,
-        padding: "10px 22px",
-        fontFamily: "SpaceMono",
-        fontSize: 30,
-        color: dark ? "#fff" : INK,
-        background: dark ? "rgba(0,0,0,0.28)" : "transparent",
-      }}
-    >
-      {text}
-    </div>
-  );
+function truncate(text: string, max: number): string {
+  if (text.length <= max) return text;
+  return text.slice(0, max).replace(/\s+\S*$/, "") + "…";
 }
 
 export async function GET(
@@ -175,9 +162,12 @@ export async function GET(
   if (slide.kind === "cover" || slide.kind === "photo") {
     const isCover = slide.kind === "cover";
     const imgSrc = await safeImage(slide.photo);
+    // Which round badge to show: the café's overall on the cover, the item's
+    // own rating on a tagged photo, nothing on an untagged extra photo.
+    const badgeValue = isCover ? overall : slide.item ? slide.item.rating : null;
 
-    // Photo couldn't be decoded (HEIC, too big, fetch failed): render a clean
-    // cream fallback so the carousel still completes instead of erroring.
+    // Photo couldn't be decoded (HEIC, too big, fetch failed): clean cream
+    // fallback so the carousel still completes instead of erroring.
     if (!imgSrc) {
       return new ImageResponse(
         (
@@ -200,15 +190,10 @@ export async function GET(
             <div style={{ fontFamily: "SpaceMono", fontSize: 28, letterSpacing: 3, color: AMBER }}>
               {cafe.area.toUpperCase()}
             </div>
-            <div style={{ fontFamily: "Bricolage", fontWeight: 800, fontSize: 96, lineHeight: 1 }}>
-              {cafe.name}
+            <div style={{ fontFamily: "Bricolage", fontWeight: 800, fontSize: 80, lineHeight: 1.05, maxWidth: 900, textAlign: "center" }}>
+              {slide.item ? slide.item.name : cafe.name}
             </div>
-            <Badge overall={overall} size={170} />
-            {slide.item && (
-              <div style={{ display: "flex" }}>
-                {chip(`${slide.item.name} · ${slide.item.rating.toFixed(1)}`, false)}
-              </div>
-            )}
+            <Badge value={badgeValue ?? overall} size={170} />
           </div>
         ),
         opts,
@@ -241,9 +226,11 @@ export async function GET(
           <div style={{ position: "absolute", top: 56, left: 72, display: "flex" }}>
             <Wordmark color="#fff" />
           </div>
-          <div style={{ position: "absolute", top: 52, right: 72, display: "flex" }}>
-            <Badge overall={overall} size={isCover ? 150 : 120} />
-          </div>
+          {badgeValue !== null && (
+            <div style={{ position: "absolute", top: 52, right: 72, display: "flex" }}>
+              <Badge value={badgeValue} size={isCover ? 150 : 130} />
+            </div>
+          )}
           <div
             style={{
               position: "absolute",
@@ -254,79 +241,45 @@ export async function GET(
               flexDirection: "column",
             }}
           >
-            {isCover && (
-              <div
-                style={{
-                  fontFamily: "SpaceMono",
-                  fontSize: 30,
-                  letterSpacing: 3,
-                  color: AMBER,
-                  marginBottom: 10,
-                }}
-              >
-                {cafe.area.toUpperCase()}
+            {isCover ? (
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <div style={{ fontFamily: "SpaceMono", fontSize: 30, letterSpacing: 3, color: AMBER, marginBottom: 10 }}>
+                  {cafe.area.toUpperCase()}
+                </div>
+                <div style={{ fontFamily: "Bricolage", fontWeight: 800, fontSize: 100, lineHeight: 1, color: "#fff", marginBottom: 20 }}>
+                  {cafe.name}
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 14 }}>
+                  {SCORE_CATEGORIES.map((cat) => (
+                    <div
+                      key={cat}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        border: "2px solid rgba(255,255,255,0.5)",
+                        borderRadius: 999,
+                        padding: "8px 18px",
+                        background: "rgba(0,0,0,0.25)",
+                      }}
+                    >
+                      <span style={{ fontFamily: "SpaceMono", fontSize: 26, color: "rgba(255,255,255,0.85)" }}>
+                        {cat.toUpperCase()}
+                      </span>
+                      <span style={{ fontFamily: "Bricolage", fontWeight: 800, fontSize: 26, color: "#fff" }}>
+                        {(cafe.scores[cat] ?? 0).toFixed(1)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
-            {isCover && (
-              <div
-                style={{
-                  fontFamily: "Bricolage",
-                  fontWeight: 800,
-                  fontSize: 108,
-                  lineHeight: 1,
-                  color: "#fff",
-                  marginBottom: 20,
-                }}
-              >
-                {cafe.name}
+            ) : slide.item ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 16, fontFamily: "Bricolage", fontWeight: 800, fontSize: 72, lineHeight: 1, color: "#fff" }}>
+                {slide.item.name}
+                {slide.item.star ? <Star size={44} color="#fff" /> : null}
               </div>
-            )}
-            {slide.item && (
-              <div style={{ display: "flex", marginBottom: isCover ? 20 : 0 }}>
-                {chip(
-                  `${slide.item.name} · ${slide.item.rating.toFixed(1)}`,
-                  true,
-                )}
-              </div>
-            )}
-            {isCover && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 14 }}>
-                {SCORE_CATEGORIES.map((cat) => (
-                  <div
-                    key={cat}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      border: "2px solid rgba(255,255,255,0.5)",
-                      borderRadius: 999,
-                      padding: "8px 18px",
-                      background: "rgba(0,0,0,0.25)",
-                    }}
-                  >
-                    <span style={{ fontFamily: "SpaceMono", fontSize: 26, color: "rgba(255,255,255,0.85)" }}>
-                      {cat.toUpperCase()}
-                    </span>
-                    <span style={{ fontFamily: "Bricolage", fontWeight: 800, fontSize: 26, color: "#fff" }}>
-                      {(cafe.scores[cat] ?? 0).toFixed(1)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {!isCover && (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  marginTop: 14,
-                  fontFamily: "SpaceMono",
-                  fontSize: 24,
-                  letterSpacing: 2,
-                  color: "rgba(255,255,255,0.9)",
-                }}
-              >
+            ) : (
+              <div style={{ display: "flex", fontFamily: "SpaceMono", fontSize: 26, letterSpacing: 2, color: "rgba(255,255,255,0.9)" }}>
                 {cafe.name.toUpperCase()}
               </div>
             )}
@@ -339,6 +292,9 @@ export async function GET(
 
   // ---- scorecard slide ----
   const items = cafe.items.filter((it) => it.name.trim()).slice(0, 4);
+  // Size the name down for long ones so it never overruns the padding.
+  const nameSize = cafe.name.length > 24 ? 56 : cafe.name.length > 16 ? 70 : 90;
+  const verdict = truncate(cafe.verdict || "", 170);
   return new ImageResponse(
     (
       <div
@@ -354,36 +310,47 @@ export async function GET(
           padding: 72,
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
           <Wordmark color={INK} />
           <div style={{ fontFamily: "SpaceMono", fontSize: 28, letterSpacing: 3, color: AMBER }}>
             {cafe.area.toUpperCase()}
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 26 }}>
-          <div style={{ fontFamily: "Bricolage", fontWeight: 800, fontSize: 88, lineHeight: 1 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+          <div
+            style={{
+              fontFamily: "Bricolage",
+              fontWeight: 800,
+              fontSize: nameSize,
+              lineHeight: 1,
+              textAlign: "center",
+              maxWidth: 936,
+            }}
+          >
             {cafe.name}
           </div>
-          <Badge overall={overall} size={150} />
+          <Badge value={overall} size={116} />
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 44 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22, width: "100%" }}>
           {items.map((it, k) => (
-            <div key={k} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 210 }}>
+            <div
+              key={k}
+              style={{ display: "flex", alignItems: "center", gap: 28, width: "100%", maxWidth: 760 }}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={cupDataUri(it.type, it.rating)} width={150} height={150} alt="" />
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "Bricolage", fontWeight: 800, fontSize: 34, textAlign: "center" }}>
-                {it.name}
-                {it.star ? <Star size={24} /> : null}
+              <img src={cupDataUri(it.type, it.rating)} width={104} height={104} alt="" />
+              <div style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "Bricolage", fontWeight: 800, fontSize: 48, lineHeight: 1.05 }}>
+                  {it.name}
+                  {it.star ? <Star size={30} /> : null}
+                </div>
+                <div style={{ fontFamily: "SpaceMono", fontSize: 24, color: DIM, marginTop: 8 }}>
+                  {whoLabel(it.who).toUpperCase()}
+                </div>
               </div>
-              <div style={{ fontFamily: "SpaceMono", fontSize: 24, color: DIM }}>
-                {whoLabel(it.who).toUpperCase()}
-              </div>
-              <div style={{ display: "flex", alignItems: "baseline", fontFamily: "Bricolage", fontWeight: 800, fontSize: 46 }}>
-                {it.rating.toFixed(1)}
-                <span style={{ fontFamily: "SpaceMono", fontWeight: 400, fontSize: 22, color: DIM, marginLeft: 4 }}>/5</span>
-              </div>
+              <Badge value={it.rating} size={104} />
             </div>
           ))}
         </div>
@@ -393,13 +360,13 @@ export async function GET(
             display: "flex",
             fontFamily: "Newsreader",
             fontStyle: "italic",
-            fontSize: 40,
+            fontSize: 36,
             lineHeight: 1.4,
             textAlign: "center",
             maxWidth: 900,
           }}
         >
-          {cafe.verdict || ""}
+          {verdict}
         </div>
 
         <div style={{ display: "flex", fontFamily: "SpaceMono", fontSize: 22, letterSpacing: 2, color: DIM }}>
