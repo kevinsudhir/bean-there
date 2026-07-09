@@ -12,7 +12,7 @@ export const SITE = {
   kickerLeft: "Manchester · Est. 2026",
   kickerRight: "Two cups · One city",
   tagline:
-    "We drink our way round Manchester's cafés and score them so you don't have to gamble your flat white money.",
+    "We drink our way round Manchester's cafés and score every cup, so your next one isn't a gamble.",
   /** The his/hers explainer shown in the "Our Order" tooltip. */
   ourOrder:
     "He's a mocha/latte man, she's cappuccino-only — so the coffee score leans on those. There's nearly always a bake or dessert in the mix, and the odd cold one when Manchester allows it.",
