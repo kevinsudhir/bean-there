@@ -40,63 +40,81 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
   const loved = isLoved(cafe);
   const slideCount = buildSlides(cafe).length;
 
-  // Share the cafe's own page (the modal URL is just the wall). Native share
-  // sheet where available (phones), clipboard copy elsewhere.
-  async function share() {
-    const url = `${window.location.origin}/cafe/${cafe.slug}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: `${cafe.name} — ${SITE.title}`, url });
-        return;
-      } catch {
-        return; // user dismissed the share sheet — not an error
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      window.prompt("Copy this link:", url);
-    }
-  }
 
-  // Fetch every carousel slide as a PNG, then share the set (phones with the
-  // file-share API — lands straight in an Instagram carousel) or download each.
+  // Download every carousel slide to the device as a numbered PNG. This is the
+  // "Save images" action — it always saves, never opens the share sheet (that's
+  // what the separate Share button is for).
   async function saveImages() {
     setImgBusy(true);
     try {
-      const files: File[] = [];
       for (let i = 0; i < slideCount; i++) {
         const res = await fetch(`/cafe/${cafe.slug}/card?i=${i}`);
         if (!res.ok) throw new Error("Couldn't render a slide.");
         const blob = await res.blob();
-        files.push(
-          new File([blob], `${cafe.slug}-${i + 1}.png`, { type: "image/png" }),
-        );
-      }
-      if (files.length && navigator.canShare?.({ files })) {
-        try {
-          await navigator.share({ files, title: cafe.name });
-          return;
-        } catch {
-          return; // user dismissed — not an error
-        }
-      }
-      for (const file of files) {
-        const url = URL.createObjectURL(file);
+        const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = file.name;
+        a.download = `${cafe.slug}-${i + 1}.png`;
+        document.body.appendChild(a); // some browsers require it to be in the DOM
         a.click();
+        a.remove();
         URL.revokeObjectURL(url);
         // Stagger so the browser doesn't block the batch of downloads.
-        await new Promise((r) => setTimeout(r, 350));
+        await new Promise((r) => setTimeout(r, 400));
       }
     } catch {
+      // Fallback: open the first slide so the user can long-press / right-click
+      // to save it manually.
       window.open(`/cafe/${cafe.slug}/card?i=0`, "_blank");
     } finally {
       setImgBusy(false);
+    }
+  }
+
+  // Share the carousel images to other apps (Instagram, WhatsApp…) where the
+  // browser supports sharing files — mainly phones. Falls back to sharing the
+  // café link. Shown as the "Share" button.
+  async function shareImages() {
+    const link = `${window.location.origin}/cafe/${cafe.slug}`;
+    try {
+      const probe = new File(["x"], "x.png", { type: "image/png" });
+      if (navigator.canShare?.({ files: [probe] })) {
+        setImgBusy(true);
+        const files: File[] = [];
+        for (let i = 0; i < slideCount; i++) {
+          const res = await fetch(`/cafe/${cafe.slug}/card?i=${i}`);
+          if (!res.ok) throw new Error();
+          files.push(
+            new File([await res.blob()], `${cafe.slug}-${i + 1}.png`, {
+              type: "image/png",
+            }),
+          );
+        }
+        setImgBusy(false);
+        if (navigator.canShare({ files })) {
+          await navigator.share({ files, title: cafe.name });
+          return;
+        }
+      }
+    } catch {
+      setImgBusy(false);
+      return; // user dismissed, or sharing failed — fall through to link
+    }
+    // No file sharing available: share or copy the café link instead.
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `${cafe.name} — ${SITE.title}`, url: link });
+        return;
+      } catch {
+        return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt("Copy this link:", link);
     }
   }
 
@@ -205,8 +223,9 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
 
       <div className="flex flex-wrap items-center justify-center gap-2.5">
         <button
-          onClick={share}
-          className="rounded-pill border-[1.5px] border-line px-4 py-2 font-mono text-[10px] uppercase tracking-wide text-ink hover:border-ink"
+          onClick={shareImages}
+          disabled={imgBusy}
+          className="rounded-pill border-[1.5px] border-line px-4 py-2 font-mono text-[10px] uppercase tracking-wide text-ink hover:border-ink disabled:opacity-40"
         >
           {copied ? "Link copied ✓" : "Share"}
         </button>
