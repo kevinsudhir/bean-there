@@ -285,7 +285,9 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
           name: name.trim(),
           area: area.trim(),
           scores,
-          items: items.filter((it) => it.name.trim()),
+          items: items
+          .filter((it) => it.name.trim())
+          .map((it) => ({ ...it, name: it.name.trim() })),
           reviewers: SITE.reviewers,
         }),
       });
@@ -335,7 +337,9 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
         area: area.trim(),
         date,
         scores,
-        items: items.filter((it) => it.name.trim()),
+        items: items
+          .filter((it) => it.name.trim())
+          .map((it) => ({ ...it, name: it.name.trim() })),
         verdict: verdict.trim(),
         photos: photoUrls,
         // Only send lat/lng and photoTags when they carry something (or the

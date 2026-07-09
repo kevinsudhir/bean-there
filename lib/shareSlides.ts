@@ -28,11 +28,18 @@ export function buildSlides(cafe: Cafe): Slide[] {
   const tags = cafe.photoTags ?? [];
 
   const itemFor = (i: number): SlideItem | null => {
-    const name = tags[i];
-    if (!name) return null;
-    const it = cafe.items.find((x) => x.name === name);
+    const tag = tags[i]?.trim();
+    if (!tag) return null;
+    // Trim both sides: tags are stored trimmed, but an item name may carry
+    // stray whitespace, which would otherwise miss the match.
+    const it = cafe.items.find((x) => x.name.trim() === tag);
     return it
-      ? { name: it.name, rating: it.rating, type: it.type, star: Boolean(it.star) }
+      ? {
+          name: it.name.trim(),
+          rating: it.rating,
+          type: it.type,
+          star: Boolean(it.star),
+        }
       : null;
   };
 
