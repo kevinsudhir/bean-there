@@ -70,4 +70,6 @@ export interface Cafe {
   /** Optional map coordinates (WGS84). Null/absent = not pinned yet. */
   lat?: number | null;
   lng?: number | null;
+  /** Vibe tags (plain labels, e.g. "Aesthetic"). Emoji/# are presentation. */
+  tags?: string[];
 }

@@ -16,6 +16,8 @@ create table if not exists public.cafes (
   -- Per-photo item tag, parallel to photos (item name or null). Quoted so the
   -- column keeps its camelCase name and matches the JSON key sent by the app.
   "photoTags" jsonb not null default '[]',
+  -- Vibe tags (array of plain labels, e.g. ["Aesthetic","Brunch"]).
+  tags jsonb not null default '[]',
   -- Optional map pin (WGS84). Null = café not located yet.
   lat double precision,
   lng double precision,
@@ -26,6 +28,7 @@ create table if not exists public.cafes (
 --   alter table public.cafes add column if not exists lat double precision;
 --   alter table public.cafes add column if not exists lng double precision;
 --   alter table public.cafes add column if not exists "photoTags" jsonb not null default '[]';
+--   alter table public.cafes add column if not exists tags jsonb not null default '[]';
 
 -- Helpful index for sorting by visit date.
 create index if not exists cafes_date_idx on public.cafes (date desc);

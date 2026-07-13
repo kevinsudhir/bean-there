@@ -20,6 +20,7 @@ export default function MobileWall({
   cafes,
   totalCafes,
   areas,
+  allTags,
   filters,
   onFilters,
   openCafe,
@@ -37,6 +38,7 @@ export default function MobileWall({
         state={filters}
         onChange={onFilters}
         areas={areas}
+        allTags={allTags}
         view={view}
         onView={setView}
       />

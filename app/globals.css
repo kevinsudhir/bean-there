@@ -133,6 +133,23 @@ body {
   .cup-bob { animation: none; }
 }
 
+/* The header bean gives a one-shot wobble on page load. */
+@keyframes bean-wobble {
+  0% { transform: rotate(0deg); }
+  20% { transform: rotate(-13deg); }
+  40% { transform: rotate(10deg); }
+  60% { transform: rotate(-6deg); }
+  80% { transform: rotate(3deg); }
+  100% { transform: rotate(0deg); }
+}
+.bean-wobble {
+  transform-origin: center;
+  animation: bean-wobble 0.9s ease-in-out 0.35s 1 both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bean-wobble { animation: none; }
+}
+
 /*
  * MAP PINS — the custom Leaflet divIcon markers: a small pill with a cup
  * glyph and the café's overall score. Amber when the café is Loved.

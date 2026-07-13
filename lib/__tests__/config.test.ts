@@ -4,6 +4,8 @@ import {
   isLoved,
   toSlug,
   formatVisitDate,
+  tagEmoji,
+  tagHash,
   SITE,
 } from "../config";
 import type { Cafe, Scores } from "../types";
@@ -98,6 +100,25 @@ describe("toSlug", () => {
   it("trims leading/trailing separators and whitespace", () => {
     expect(toSlug("  Pollen  ")).toBe("pollen");
     expect(toSlug("---Takk---")).toBe("takk");
+  });
+});
+
+describe("tagHash", () => {
+  it("lowercases and strips non-alphanumerics", () => {
+    expect(tagHash("Aesthetic")).toBe("#aesthetic");
+    expect(tagHash("Laptop-friendly")).toBe("#laptopfriendly");
+    expect(tagHash("Outdoor seating")).toBe("#outdoorseating");
+  });
+});
+
+describe("tagEmoji", () => {
+  it("returns the emoji for a suggested tag, case-insensitively", () => {
+    expect(tagEmoji("Aesthetic")).toBe("📸");
+    expect(tagEmoji("  brunch ")).toBe("🥐");
+  });
+
+  it("returns undefined for a custom tag", () => {
+    expect(tagEmoji("Canalside")).toBeUndefined();
   });
 });
 

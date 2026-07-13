@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
 import { getCafeBySlug } from "@/lib/cafes";
 import { supabase } from "@/lib/supabase";
-import { overallScore, SITE } from "@/lib/config";
+import { overallScore, tagHash, SITE } from "@/lib/config";
+import { TAG_EMOJI_IMG } from "@/lib/tagEmojiData";
 import { SCORE_CATEGORIES } from "@/lib/types";
 import type { Who } from "@/lib/types";
 import { buildSlides } from "@/lib/shareSlides";
@@ -130,6 +131,14 @@ async function safeImage(url: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/** The embedded emoji image for a tag label (suggested tags only), else null. */
+function tagEmojiImg(label: string): string | null {
+  const key = Object.keys(TAG_EMOJI_IMG).find(
+    (k) => k.toLowerCase() === label.trim().toLowerCase(),
+  );
+  return key ? TAG_EMOJI_IMG[key] : null;
 }
 
 function truncate(text: string, max: number): string {
@@ -281,6 +290,35 @@ export async function GET(
                 <div style={{ fontFamily: "Bricolage", fontWeight: 800, fontSize: 100, lineHeight: 1, color: "#fff", marginBottom: 20 }}>
                   {cafe.name}
                 </div>
+                {(cafe.tags ?? []).length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 18 }}>
+                    {(cafe.tags ?? []).slice(0, 4).map((t) => {
+                      const img = tagEmojiImg(t);
+                      return (
+                        <div
+                          key={t}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            border: "2px solid rgba(255,255,255,0.5)",
+                            borderRadius: 999,
+                            padding: "8px 18px",
+                            background: "rgba(0,0,0,0.32)",
+                          }}
+                        >
+                          {img ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={img} width={30} height={30} alt="" />
+                          ) : null}
+                          <span style={{ fontFamily: "SpaceMono", fontSize: 26, color: "#fff" }}>
+                            {tagHash(t)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 14 }}>
                   {SCORE_CATEGORIES.map((cat) => (
                     <div

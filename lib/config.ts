@@ -24,6 +24,32 @@ export const SITE = {
 } as const;
 
 /**
+ * Suggested vibe tags shown as quick-picks in the form. Any custom tag can also
+ * be added. The emoji is presentation only (shown on the site and, via embedded
+ * images, on the share card); the stored value is just the label.
+ */
+export const SUGGESTED_TAGS: { label: string; emoji: string }[] = [
+  { label: "Aesthetic", emoji: "📸" },
+  { label: "Laptop-friendly", emoji: "💻" },
+  { label: "Brunch", emoji: "🥐" },
+  { label: "Cosy", emoji: "🛋️" },
+  { label: "Group-friendly", emoji: "👥" },
+  { label: "Outdoor seating", emoji: "🌿" },
+];
+
+/** Emoji for a suggested tag label, or undefined for a custom tag. */
+export function tagEmoji(label: string): string | undefined {
+  return SUGGESTED_TAGS.find(
+    (t) => t.label.toLowerCase() === label.trim().toLowerCase(),
+  )?.emoji;
+}
+
+/** A tag label as a hashtag, e.g. "Laptop-friendly" → "#laptopfriendly". */
+export function tagHash(label: string): string {
+  return "#" + label.toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+/**
  * Average of the five category scores, rounded to one decimal. Tolerates rows
  * whose JSON is missing a category (treated as 0) rather than returning NaN.
  */

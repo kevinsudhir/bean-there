@@ -8,6 +8,8 @@ import {
   isLoved,
   formatVisitDate,
   mapsSearchUrl,
+  tagEmoji,
+  tagHash,
   SITE,
 } from "@/lib/config";
 import { buildSlides } from "@/lib/shareSlides";
@@ -134,6 +136,20 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
       <div className="font-mono text-[11px] uppercase tracking-widest text-amber">
         {cafe.area} · Reviewed {formatVisitDate(cafe.date)}
       </div>
+
+      {cafe.tags && cafe.tags.length > 0 && (
+        <div className="flex max-w-full flex-wrap justify-center gap-2">
+          {cafe.tags.map((t) => (
+            <span
+              key={t}
+              className="rounded-pill border-[1.5px] border-line px-3 py-1 font-mono text-[11px] text-dim"
+            >
+              {tagEmoji(t) ? `${tagEmoji(t)} ` : ""}
+              {tagHash(t)}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="flex w-full max-w-full flex-wrap items-center justify-center gap-4 sm:gap-8">
         <h2 className="flex items-center gap-2.5 font-display text-[clamp(36px,4.6vw,64px)] font-extrabold leading-[0.86] tracking-tight">

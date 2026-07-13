@@ -32,7 +32,7 @@ export default function Header() {
           aria-label="Our order"
           className="group relative ml-1.5 inline-flex cursor-help outline-none"
         >
-          <svg viewBox="0 0 40 50" className="h-[0.62em] w-[0.5em]">
+          <svg viewBox="0 0 40 50" className="bean-wobble h-[0.62em] w-[0.5em]">
             <ellipse cx="20" cy="25" rx="15" ry="23" fill="var(--amber)" />
             <path
               d="M20,4 C12,16 12,34 20,46"

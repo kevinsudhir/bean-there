@@ -29,6 +29,15 @@ export function useFilteredCafes(
 
     if (state.area !== "all") list = list.filter((c) => c.area === state.area);
 
+    // Vibe tags: keep cafés carrying ALL selected tags (case/space-insensitive).
+    if (state.tags.length) {
+      const want = state.tags.map((t) => t.trim().toLowerCase());
+      list = list.filter((c) => {
+        const have = (c.tags ?? []).map((t) => t.trim().toLowerCase());
+        return want.every((t) => have.includes(t));
+      });
+    }
+
     if (state.sort === "score") {
       list.sort((a, b) => overallScore(b.scores) - overallScore(a.scores));
     } else if (state.sort === "recent") {

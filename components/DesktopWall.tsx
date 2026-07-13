@@ -17,6 +17,7 @@ export default function DesktopWall({
   cafes,
   totalCafes,
   areas,
+  allTags,
   filters,
   onFilters,
   openCafe,
@@ -34,6 +35,7 @@ export default function DesktopWall({
         state={filters}
         onChange={onFilters}
         areas={areas}
+        allTags={allTags}
         view={view}
         onView={setView}
       />

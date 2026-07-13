@@ -23,12 +23,21 @@ export default function Wall({ cafes }: { cafes: Cafe[] }) {
     sort: "score",
     area: "all",
     lovedOnly: false,
+    tags: [],
   });
   const [openCafe, setOpenCafe] = useState<Cafe | null>(null);
 
   // Unique area names for the Area filter, derived from the data.
   const areas = useMemo(
     () => Array.from(new Set(cafes.map((c) => c.area))).sort(),
+    [cafes],
+  );
+  // Unique vibe tags present across the data, for the Vibe filter.
+  const allTags = useMemo(
+    () =>
+      Array.from(new Set(cafes.flatMap((c) => c.tags ?? []).map((t) => t.trim())))
+        .filter(Boolean)
+        .sort(),
     [cafes],
   );
   const visible = useFilteredCafes(cafes, filters);
@@ -38,6 +47,7 @@ export default function Wall({ cafes }: { cafes: Cafe[] }) {
     cafes: visible,
     totalCafes: cafes.length,
     areas,
+    allTags,
     filters,
     onFilters: setFilters,
     openCafe,
@@ -62,6 +72,7 @@ export interface WallViewProps {
   cafes: Cafe[];
   totalCafes: number;
   areas: string[];
+  allTags: string[];
   filters: FilterState;
   onFilters: (next: FilterState) => void;
   openCafe: Cafe | null;

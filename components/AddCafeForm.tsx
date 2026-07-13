@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Cafe, CafeItem, ItemType, Scores, Who } from "@/lib/types";
 import { SCORE_CATEGORIES } from "@/lib/types";
-import { overallScore, SITE } from "@/lib/config";
+import { overallScore, SITE, SUGGESTED_TAGS } from "@/lib/config";
 import { createCafe, updateCafe, deleteCafe } from "@/lib/cafes";
 import { revalidateCafes } from "@/lib/actions";
 import { toSlug } from "@/lib/config";
@@ -112,6 +112,8 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
     existing?.items?.length ? existing.items : [emptyItem()],
   );
   const [verdict, setVerdict] = useState(existing?.verdict ?? "");
+  const [tags, setTags] = useState<string[]>(existing?.tags ?? []);
+  const [customTag, setCustomTag] = useState("");
   const [drafting, setDrafting] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
   // All photos as one ordered list (saved URLs + newly picked files), each with
@@ -138,6 +140,24 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
 
   // Item names that a photo can be tagged with (drives the tag dropdowns).
   const itemNames = items.map((it) => it.name.trim()).filter(Boolean);
+
+  const hasTag = (label: string) =>
+    tags.some((t) => t.toLowerCase() === label.toLowerCase());
+  const toggleTag = (label: string) =>
+    setTags((cur) =>
+      hasTag(label)
+        ? cur.filter((t) => t.toLowerCase() !== label.toLowerCase())
+        : [...cur, label],
+    );
+  const addCustomTag = () => {
+    const t = customTag.trim();
+    if (t && !hasTag(t)) setTags((cur) => [...cur, t]);
+    setCustomTag("");
+  };
+  // Custom tags = selected tags that aren't in the suggested set.
+  const customTags = tags.filter(
+    (t) => !SUGGESTED_TAGS.some((s) => s.label.toLowerCase() === t.toLowerCase()),
+  );
 
   // Revoke any object URLs created for new-file previews when we unmount.
   useEffect(() => () => objectUrls.current.forEach(URL.revokeObjectURL), []);
@@ -349,6 +369,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
         ...(photoTags.some(Boolean) || existing?.photoTags
           ? { photoTags }
           : {}),
+        ...(tags.length || existing?.tags ? { tags } : {}),
       };
 
       if (isEdit && existing) {
@@ -703,6 +724,58 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        <div>
+          <label className={label}>Vibe tags</label>
+          <div className="flex flex-wrap gap-2">
+            {SUGGESTED_TAGS.map(({ label: l, emoji }) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => toggleTag(l)}
+                className={`rounded-pill border-[1.5px] px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide ${
+                  hasTag(l)
+                    ? "border-amber bg-amber text-white"
+                    : "border-line text-ink"
+                }`}
+              >
+                {emoji} {l}
+              </button>
+            ))}
+            {customTags.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => toggleTag(t)}
+                aria-label={`Remove ${t}`}
+                className="rounded-pill border-[1.5px] border-amber bg-amber px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-white"
+              >
+                {t} ✕
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 flex gap-2">
+            <input
+              value={customTag}
+              onChange={(e) => setCustomTag(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addCustomTag();
+                }
+              }}
+              placeholder="Add a custom tag"
+              className={`${field} max-w-[240px]`}
+            />
+            <button
+              type="button"
+              onClick={addCustomTag}
+              className="flex-none rounded-pill border-[1.5px] border-line px-4 font-mono text-[11px] uppercase tracking-wide"
+            >
+              Add
+            </button>
           </div>
         </div>
 

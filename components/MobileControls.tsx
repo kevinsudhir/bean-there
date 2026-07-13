@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SITE } from "@/lib/config";
+import { SITE, tagEmoji, tagHash } from "@/lib/config";
 import type { FilterState, SortKey } from "./Controls";
 
 export type MobileView = "list" | "gallery" | "map";
@@ -50,18 +50,26 @@ export default function MobileControls({
   state,
   onChange,
   areas,
+  allTags,
   view,
   onView,
 }: {
   state: FilterState;
   onChange: (next: FilterState) => void;
   areas: string[];
+  allTags: string[];
   view: MobileView;
   onView: (v: MobileView) => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
 
   const set = (patch: Partial<FilterState>) => onChange({ ...state, ...patch });
+  const toggleTag = (t: string) =>
+    set({
+      tags: state.tags.includes(t)
+        ? state.tags.filter((x) => x !== t)
+        : [...state.tags, t],
+    });
 
   const chip = (active: boolean) =>
     `rounded-pill border-[1.5px] px-3 py-2 font-mono text-[10px] uppercase tracking-wide ${
@@ -170,6 +178,26 @@ export default function MobileControls({
               ))}
             </div>
           </div>
+
+          {allTags.length > 0 && (
+            <div>
+              <div className="mb-2 font-mono text-[9px] uppercase tracking-widest text-dim">
+                Vibe
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {allTags.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => toggleTag(t)}
+                    className={chip(state.tags.includes(t))}
+                  >
+                    {tagEmoji(t) ? `${tagEmoji(t)} ` : ""}
+                    {tagHash(t)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

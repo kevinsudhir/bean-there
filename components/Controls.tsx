@@ -1,6 +1,6 @@
 "use client";
 
-import { SITE } from "@/lib/config";
+import { SITE, tagEmoji, tagHash } from "@/lib/config";
 import ThemeToggle from "./ThemeToggle";
 
 export type SortKey = "score" | "recent" | "name";
@@ -10,6 +10,7 @@ export interface FilterState {
   sort: SortKey;
   area: string; // "all" or an area name
   lovedOnly: boolean;
+  tags: string[]; // selected vibe tags (AND)
 }
 
 const SORTS: { key: SortKey; label: string }[] = [
@@ -25,16 +26,24 @@ export default function Controls({
   state,
   onChange,
   areas,
+  allTags,
   view,
   onView,
 }: {
   state: FilterState;
   onChange: (next: FilterState) => void;
   areas: string[];
+  allTags: string[];
   view: DesktopView;
   onView: (v: DesktopView) => void;
 }) {
   const set = (patch: Partial<FilterState>) => onChange({ ...state, ...patch });
+  const toggleTag = (t: string) =>
+    set({
+      tags: state.tags.includes(t)
+        ? state.tags.filter((x) => x !== t)
+        : [...state.tags, t],
+    });
 
   const chip = (active: boolean) =>
     `rounded-pill border-[1.5px] px-3.5 py-2 font-mono text-[11px] uppercase tracking-wide leading-none transition-colors cursor-pointer ${
@@ -96,6 +105,24 @@ export default function Controls({
       >
         ★ {SITE.badgeLabel}
       </button>
+
+      {allTags.length > 0 && (
+        <div className="flex items-center gap-2 rounded-pill border-[1.5px] border-line py-1.5 pl-4 pr-2">
+          <span className="font-mono text-xs uppercase tracking-wide text-dim">
+            Vibe
+          </span>
+          {allTags.map((t) => (
+            <button
+              key={t}
+              onClick={() => toggleTag(t)}
+              className={chip(state.tags.includes(t))}
+            >
+              {tagEmoji(t) ? `${tagEmoji(t)} ` : ""}
+              {tagHash(t)}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex h-11 items-center gap-2 rounded-pill border-[1.5px] border-line px-2">
         <button onClick={() => onView("grid")} className={chip(view === "grid")}>
