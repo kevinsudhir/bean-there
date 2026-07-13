@@ -1,164 +1,111 @@
 # Bean There ☕
 
-Two people drinking their way round Manchester's cafés and scoring them so you don't have to gamble your flat white money.
+Two people drinking their way round Manchester's cafés and scoring every cup, so your next one isn't a gamble.
 
-This is a real, deployable web app built with **Next.js (App Router) + React + TypeScript + Tailwind CSS + Supabase**. It shows every café as an illustrated coffee cup filled to its score, opens a full review when you tap one, and has a built-in form to add new cafés (no code required).
+A deployable web app built with **Next.js (App Router) · React · TypeScript · Tailwind CSS · Supabase**. Every café is an illustrated coffee cup filled to its score; tap one for the full review, browse them on a map, and share a café as an Instagram-ready image.
+
+> For how the codebase is organised and the ideas behind it, see
+> [`docs/architecture.md`](docs/architecture.md) (or open `docs/architecture.html` in a browser).
 
 ---
 
-## 1. Quick start (run it locally)
+## Features
 
-You need [Node.js](https://nodejs.org) 18+ installed.
+- **The wall** — every café as a cup filled to its overall score; grid or map view (desktop), list / gallery / map (mobile).
+- **Reviews** — per-item cups and ratings, category scores, verdict, and a photo carousel with a peek-style lightbox. Each café also has its own shareable page at `/cafe/<slug>`.
+- **Map** — Leaflet + free OpenStreetMap tiles; pins show each café's score. Café names link out to Google Maps.
+- **Vibe tags** — tag cafés (Aesthetic, Brunch, Cosy, …, or custom) and filter the wall by them.
+- **Add / edit** — a no-code form (owner-only) to publish, edit, or delete a café, with photo upload and per-photo tagging.
+- **AI-drafted verdicts** — an optional "Draft with AI" button (server-side Gemini; owner-only).
+- **Share images** — download a café as a branded Instagram carousel (cover + photos + scorecard), or share its link.
+- **Light / dark theme** and magic-link login for the two owners.
+
+---
+
+## Quick start
+
+Needs [Node.js](https://nodejs.org) 18+.
 
 ```bash
-# from the project folder
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000. It runs immediately using **sample data** — you don't need Supabase to see it working.
-
-To enable saving cafés and photo uploads, set up Supabase (section 3).
+Open http://localhost:3000. It runs immediately on **sample data** — no Supabase needed to see it working. To save cafés, upload photos, and log in, connect Supabase below.
 
 ---
 
-## 2. What's in the box (project structure)
+## Connect Supabase
 
-```
-bean-there/
-├── app/                      # Pages & routing (Next.js App Router)
-│   ├── layout.tsx            # Wraps every page: fonts + theme provider
-│   ├── globals.css           # ★ DESIGN TOKENS — all colours, light + dark
-│   ├── page.tsx              # Home page (the wall of cafés)
-│   ├── add/page.tsx          # "Add a café" page
-│   ├── cafe/[slug]/page.tsx  # A shareable page per café (e.g. /cafe/pollen)
-│   └── not-found.tsx         # 404 page
-│
-├── components/               # Reusable UI pieces (one job each)
-│   ├── Header.tsx            # Title, bean tooltip, tagline
-│   ├── Controls.tsx          # Search + sort + area + badge filter + theme
-│   ├── Wall.tsx              # Holds filter state; renders the card grid + modal
-│   ├── CafeCard.tsx          # One café on the wall (the big cup)
-│   ├── CupIcon.tsx           # ★ Draws the cup/muffin SVG filled to a score
-│   ├── ScorePills.tsx        # The five category score chips
-│   ├── ReviewModal.tsx       # The full review card (opens on tap)
-│   ├── PhotoStrip.tsx        # Horizontal photo gallery
-│   ├── Lightbox.tsx          # Full-screen photo viewer
-│   ├── AddCafeForm.tsx       # The no-code form to add a café
-│   ├── ThemeProvider.tsx     # Light/dark state (React Context)
-│   └── ThemeToggle.tsx       # The Dark/Light button
-│
-├── lib/                      # Logic & data (no UI here)
-│   ├── types.ts              # ★ The Cafe type — the data contract
-│   ├── config.ts             # ★ Site text + scoring/badge rules
-│   ├── cafes.ts              # Data access: getCafes, getCafeBySlug, createCafe
-│   ├── supabase.ts           # Configured Supabase client
-│   ├── sample-data.ts        # Fallback data so it runs without Supabase
-│   ├── upload.ts             # Photo upload to Supabase storage
-│   └── useFilteredCafes.ts   # Shared search/sort/filter logic
-│
-├── supabase/
-│   └── schema.sql            # Database + storage setup (run once in Supabase)
-│
-├── tailwind.config.ts        # Tailwind wired to the CSS-variable tokens
-└── .env.local.example        # Template for your Supabase credentials
-```
+Supabase is a free hosted database with file storage and auth.
 
-The ★ files are the most important to understand — see section 5.
-
----
-
-## 3. Connect Supabase (enables saving + photos)
-
-Supabase is a free hosted database with file storage and login built in.
-
-1. Create a free account at [supabase.com](https://supabase.com) and make a new project.
-2. In the project, go to **SQL Editor → New query**, paste the contents of
-   `supabase/schema.sql`, and click **Run**. This creates the `cafes` table, the
-   security rules, and the `cafe-photos` storage bucket.
-3. Go to **Project Settings → API** and copy the **Project URL** and the
-   **anon public** key.
-4. In the project folder, copy `.env.local.example` to `.env.local` and paste
-   your values:
+1. Create a project at [supabase.com](https://supabase.com).
+2. **SQL Editor → New query**, paste `supabase/schema.sql`, and **Run**. This creates the `cafes` table (including the `photoTags` and `tags` columns), the security rules, and the `cafe-photos` storage bucket. *(If you set the DB up earlier, the file also lists the `alter table … add column` statements to add newer columns.)*
+3. **Project Settings → API** → copy the **Project URL** and **anon public** key.
+4. Copy `.env.local.example` to `.env.local` and fill in:
    ```
    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   GEMINI_API_KEY=your-gemini-key           # optional, enables AI verdicts (server-only)
+   NEXT_PUBLIC_SITE_URL=https://your-domain # optional, for absolute share/preview URLs
    ```
-5. Restart `npm run dev`. The app now reads/writes real data.
+5. Restart `npm run dev`.
 
-**Login (so only you two can add cafés):** the write rules require an
-authenticated user. The simplest option is Supabase's email magic-link auth —
-enable it under **Authentication → Providers → Email**. (Wiring a login button
-into the app is a good first exercise; see section 6.)
+**Login** — writes require an authenticated user, so only the owners can add or edit. Enable **Authentication → Providers → Email** (magic link), **turn off new sign-ups**, and add the owner accounts under **Authentication → Users**. The RLS policies in `schema.sql` can be tightened to an email allowlist.
 
 ---
 
-## 4. Deploy it (free)
+## Deploy (Railway)
 
-The easiest host is [Vercel](https://vercel.com) (made by the Next.js team):
+The app is hosted on [Railway](https://railway.app), which redeploys on every push to `main`.
 
-1. Push this folder to a GitHub repository.
-2. On Vercel, **Add New → Project**, import the repo.
-3. Add the two environment variables (`NEXT_PUBLIC_SUPABASE_URL` and
-   `NEXT_PUBLIC_SUPABASE_ANON_KEY`) in the Vercel project settings.
-4. Deploy. You get a live URL; every push to GitHub redeploys automatically.
+1. Push to a GitHub repo and create a Railway project from it.
+2. Add the environment variables from step 4 above (at least the two `NEXT_PUBLIC_SUPABASE_*`; plus `GEMINI_API_KEY` and `NEXT_PUBLIC_SITE_URL` if used).
+3. For a custom domain, add it under the service's **Networking** settings and point your DNS at the CNAME target Railway gives you, then set `NEXT_PUBLIC_SITE_URL` to that domain.
 
 ---
 
-## 5. How it actually works (the mental model)
+## Project structure
 
-**A request becomes a rendered café like this:**
+```
+app/                         # Pages, routing, and image routes (App Router)
+  layout.tsx  globals.css    # Shell + design tokens (all colours, light + dark)
+  page.tsx                   # Home — the wall
+  add/  cafe/[slug]/edit/    # Owner-only add / edit
+  cafe/[slug]/page.tsx       # Shareable per-café page
+  cafe/[slug]/card/          # Renders the share-card carousel slides as PNGs
+  api/verdict/               # Server route: AI verdict via Gemini
+  opengraph-image · logo · icon
 
-1. You visit `/`. `app/page.tsx` runs **on the server**, calls `getCafes()`
-   (`lib/cafes.ts`), which reads from Supabase (or sample data).
-2. It passes the cafés to `<Wall>` (`components/Wall.tsx`), a **client
-   component** that runs in the browser and handles interactivity.
-3. `Wall` keeps the filter state, uses `useFilteredCafes` to narrow/sort the
-   list, and renders a `<CafeCard>` for each. Each card draws a `<CupIcon>`
-   filled to the café's overall score.
-4. Tap a card → `Wall` sets `openCafe` → `<ReviewModal>` renders the full
-   review. Everything reads from the same `Cafe` object.
+components/                  # UI (props in → JSX out)
+  Wall → Desktop/MobileWall  # Layout container + the two views
+  CafeCard · CafeListRow · CafeMap
+  ReviewContent · ReviewModal · ReviewSheet · PhotoStrip · Lightbox
+  Controls · MobileControls  # Search, sort, area, vibe, view, theme
+  AddCafeForm  CupIcon · WallCup · ScorePills · Header
+  Auth/ThemeProvider · RequireAuth · PourGame
 
-**Two ideas worth internalising for interviews:**
+lib/                         # Logic & data (no UI)
+  types.ts  config.ts        # The Cafe contract + site text/rules/tag helpers
+  cafes.ts  supabase.ts  sample-data.ts  upload.ts  actions.ts
+  useFilteredCafes.ts        # Shared search/sort/filter
+  shareSlides.ts  cupSvg.ts  ogFonts*.ts  tagEmojiData.ts   # Share-card pieces
 
-- **Server vs Client Components.** Pages under `app/` are Server Components by
-  default (fast, can fetch data directly). Files that start with `"use client"`
-  run in the browser and can use state/effects/events. We fetch on the server,
-  then hand data to client components for interactivity.
-- **One source of truth, twice.** Colours live once in `globals.css`; the data
-  shape lives once in `lib/types.ts`. Change either in one place and it ripples
-  correctly everywhere. This is the answer to "where would you change X?"
-
----
-
-## 6. Make-a-change drills (great interview prep)
-
-Try these — each is a small, real change that teaches a concept:
-
-| Change | Where | Concept |
-| --- | --- | --- |
-| Change the brand amber colour | `app/globals.css` (`--amber`) | Design tokens |
-| Make the "Loved" badge need 4.7+ | `lib/config.ts` (`badgeThreshold`) | Single-constant config |
-| Add a 6th score category (e.g. "wifi") | `lib/types.ts` (`SCORE_CATEGORIES`) | Typed contract propagation |
-| Change the reviewer names | `lib/config.ts` (`reviewers`) | Config |
-| Add a new sort option | `components/Controls.tsx` + `lib/useFilteredCafes.ts` | State + pure logic |
-| Change the tagline | `lib/config.ts` (`tagline`) | Config |
-| Make cups bigger on the wall | `components/CafeCard.tsx` (`size` prop) | Component props |
-| Add a login button | new component + `lib/supabase.ts` auth | Auth + Context |
-
-When you add the 6th category, notice how TypeScript immediately flags every
-place that must handle it — that's the type system doing your code review.
+supabase/schema.sql          # Database + storage setup
+docs/architecture.md         # How it all fits together
+```
 
 ---
 
-## 7. Scripts
+## Scripts
 
 ```bash
 npm run dev      # local dev server
 npm run build    # production build
 npm run start    # run the production build
-npm run lint     # check for problems
-npm run format   # auto-format with Prettier
+npm run lint     # eslint
+npm run test     # unit tests (vitest)
+npm run format   # prettier
 ```
 
 ---
