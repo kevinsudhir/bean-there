@@ -187,6 +187,14 @@ export async function GET(
     // Which round badge to show: the café's overall on the cover, the item's
     // own rating on a tagged photo, nothing on an untagged extra photo.
     const badgeValue = isCover ? overall : slide.item ? slide.item.rating : null;
+    // Shrink long item names so they don't crowd the badge on photo slides.
+    const itemNameSize = slide.item
+      ? slide.item.name.length > 20
+        ? 44
+        : slide.item.name.length > 13
+          ? 54
+          : 66
+      : 66;
 
     // Photo couldn't be decoded (HEIC, too big, fetch failed): clean cream
     // fallback so the carousel still completes instead of erroring.
@@ -300,9 +308,9 @@ export async function GET(
             ) : slide.item ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 14, fontFamily: "Bricolage", fontWeight: 800, fontSize: 66, lineHeight: 1, color: "#fff", maxWidth: 720 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 14, fontFamily: "Bricolage", fontWeight: 800, fontSize: itemNameSize, lineHeight: 1.05, color: "#fff", flexShrink: 1, minWidth: 0 }}>
                     {slide.item.name}
-                    {slide.item.star ? <Star size={40} color="#fff" /> : null}
+                    {slide.item.star ? <Star size={36} color="#fff" /> : null}
                   </div>
                   <Badge value={slide.item.rating} size={104} />
                 </div>
@@ -366,25 +374,37 @@ export async function GET(
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22, width: "100%" }}>
-          {items.map((it, k) => (
-            <div
-              key={k}
-              style={{ display: "flex", alignItems: "center", gap: 28, width: "100%", maxWidth: 760 }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={cupDataUri(it.type, it.rating)} width={104} height={104} alt="" />
-              <div style={{ display: "flex", flexDirection: "column", flexGrow: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "Bricolage", fontWeight: 800, fontSize: 48, lineHeight: 1.05 }}>
-                  {it.name}
-                  {it.star ? <Star size={30} /> : null}
+          {items.map((it, k) => {
+            // Shrink long item names so they wrap in their column instead of
+            // overrunning the score badge beside them.
+            const itemNameSize =
+              it.name.length > 22 ? 32 : it.name.length > 14 ? 40 : 48;
+            return (
+              <div
+                key={k}
+                style={{ display: "flex", alignItems: "center", gap: 24, width: "100%", maxWidth: 760 }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={cupDataUri(it.type, it.rating)}
+                  width={104}
+                  height={104}
+                  alt=""
+                  style={{ flexShrink: 0 }}
+                />
+                <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, fontFamily: "Bricolage", fontWeight: 800, fontSize: itemNameSize, lineHeight: 1.1 }}>
+                    {it.name}
+                    {it.star ? <Star size={26} /> : null}
+                  </div>
+                  <div style={{ fontFamily: "SpaceMono", fontSize: 24, color: DIM, marginTop: 8 }}>
+                    {whoLabel(it.who).toUpperCase()}
+                  </div>
                 </div>
-                <div style={{ fontFamily: "SpaceMono", fontSize: 24, color: DIM, marginTop: 8 }}>
-                  {whoLabel(it.who).toUpperCase()}
-                </div>
+                <Badge value={it.rating} size={104} />
               </div>
-              <Badge value={it.rating} size={104} />
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div
