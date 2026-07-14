@@ -50,7 +50,7 @@ export default function Header() {
         </span>
       </h1>
 
-      <p className="max-w-[600px] font-voice text-[clamp(16px,2vw,21px)] italic text-dim">
+      <p className="max-w-[440px] font-voice text-[clamp(16px,2vw,20px)] italic leading-[1.4] text-dim">
         {SITE.tagline}
       </p>
     </header>

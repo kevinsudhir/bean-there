@@ -1,6 +1,6 @@
 "use client";
 
-import { SITE, tagEmoji, tagHash } from "@/lib/config";
+import { tagEmoji, tagHash } from "@/lib/config";
 import ThemeToggle from "./ThemeToggle";
 
 export type SortKey = "score" | "recent" | "name";
@@ -46,7 +46,7 @@ export default function Controls({
     });
 
   const chip = (active: boolean) =>
-    `rounded-pill border-[1.5px] px-3.5 py-2 font-mono text-[11px] uppercase tracking-wide leading-none transition-colors cursor-pointer ${
+    `rounded-pill border-[1.5px] px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide leading-none transition-colors cursor-pointer ${
       active ? "border-ink bg-ink text-bg" : "border-line text-ink"
     }`;
 
@@ -97,13 +97,13 @@ export default function Controls({
 
       <button
         onClick={() => set({ lovedOnly: !state.lovedOnly })}
-        className={`h-11 rounded-pill border-[1.5px] px-4 font-mono text-[11px] uppercase tracking-wide ${
+        className={`h-11 rounded-pill border-[1.5px] px-4 font-mono text-[10px] uppercase tracking-wide ${
           state.lovedOnly
             ? "border-amber bg-amber text-white"
             : "border-line text-ink"
         }`}
       >
-        ★ {SITE.badgeLabel}
+        ★ Loved
       </button>
 
       {allTags.length > 0 && (
@@ -124,16 +124,21 @@ export default function Controls({
         </div>
       )}
 
-      <div className="flex h-11 items-center gap-2 rounded-pill border-[1.5px] border-line px-2">
-        <button onClick={() => onView("grid")} className={chip(view === "grid")}>
-          Grid
-        </button>
-        <button onClick={() => onView("map")} className={chip(view === "map")}>
-          Map
-        </button>
-      </div>
+      <div className="ml-auto flex flex-wrap items-center gap-x-[22px] gap-y-3.5">
+        <div className="flex h-11 items-center gap-2 rounded-pill border-[1.5px] border-line px-2">
+          <button
+            onClick={() => onView("grid")}
+            className={chip(view === "grid")}
+          >
+            Grid
+          </button>
+          <button onClick={() => onView("map")} className={chip(view === "map")}>
+            Map
+          </button>
+        </div>
 
-      <ThemeToggle />
+        <ThemeToggle />
+      </div>
     </div>
   );
 }
