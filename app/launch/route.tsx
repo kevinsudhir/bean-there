@@ -53,7 +53,7 @@ export async function GET() {
             </svg>
           </div>
           <div style={{ fontFamily: "SpaceMono", fontSize: 28, letterSpacing: 4, color: INK }}>
-            TWO CUPS · ONE CITY · EVERY CAFÉ SCORED
+            {SITE.kickerRight.toUpperCase()}
           </div>
         </div>
 
