@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Cafe, CafeItem, ItemType, Scores, Who } from "@/lib/types";
 import { SCORE_CATEGORIES } from "@/lib/types";
 import { overallScore, SITE, SUGGESTED_TAGS } from "@/lib/config";
-import { createCafe, updateCafe, deleteCafe } from "@/lib/cafes";
+import { createCafe, updateCafe, deleteCafe, getCafeBySlug } from "@/lib/cafes";
 import { revalidateCafes } from "@/lib/actions";
 import { toSlug } from "@/lib/config";
 import { uploadPhoto } from "@/lib/upload";
@@ -202,8 +202,20 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
 
   const setScore = (cat: keyof Scores, value: number) =>
     setScores((s) => ({ ...s, [cat]: clampScore(value) }));
-  const setItem = (i: number, patch: Partial<CafeItem>) =>
+  const setItem = (i: number, patch: Partial<CafeItem>) => {
+    // Renaming an item drags its photo tags along, so a photo tagged "Mocha"
+    // still labels the right slide after the item becomes "Iced Mocha".
+    if (patch.name !== undefined) {
+      const oldName = items[i]?.name.trim();
+      const newName = patch.name.trim();
+      if (oldName && oldName !== newName) {
+        setPhotos((ps) =>
+          ps.map((p) => (p.tag === oldName ? { ...p, tag: newName || null } : p)),
+        );
+      }
+    }
     setItems((list) => list.map((it, j) => (j === i ? { ...it, ...patch } : it)));
+  };
   const addItem = () => setItems((list) => [...list, emptyItem()]);
 
   // Quick-pick presets: one tap adds a pre-filled item (type, name, who) with a
@@ -236,8 +248,16 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
         list.length === 1 && !list[0].name.trim();
       return onlyBlankStarter ? [next] : [...list, next];
     });
-  const removeItem = (i: number) =>
+  const removeItem = (i: number) => {
+    // Clear photo tags that pointed at the removed item.
+    const gone = items[i]?.name.trim();
+    if (gone) {
+      setPhotos((ps) =>
+        ps.map((p) => (p.tag === gone ? { ...p, tag: null } : p)),
+      );
+    }
     setItems((list) => list.filter((_, j) => j !== i));
+  };
 
   // Look the café up on OpenStreetMap's free geocoder (Nominatim) by
   // name + area + city. No API key; fine at our do-it-once-per-café volume.
@@ -306,8 +326,8 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
           area: area.trim(),
           scores,
           items: items
-          .filter((it) => it.name.trim())
-          .map((it) => ({ ...it, name: it.name.trim() })),
+            .filter((it) => it.name.trim())
+            .map((it) => ({ ...it, name: it.name.trim() })),
           reviewers: SITE.reviewers,
         }),
       });
@@ -339,8 +359,30 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
     }
     setSaving(true);
     try {
+      // Adding a café whose slug already exists would hit the DB's unique
+      // constraint with a cryptic error (and orphan any uploaded photos), so
+      // check up front and point at the edit flow instead.
+      if (!isEdit) {
+        const slug = toSlug(name.trim());
+        const dupe = slug ? await getCafeBySlug(slug) : null;
+        if (dupe) {
+          setError(
+            `You've already reviewed "${dupe.name}" — open it on the wall and use Edit instead.`,
+          );
+          setSaving(false);
+          return;
+        }
+      }
+
+      const itemsPayload = items
+        .filter((it) => it.name.trim())
+        .map((it) => ({ ...it, name: it.name.trim() }));
+      const validTagNames = new Set(itemsPayload.map((it) => it.name));
+
       // Walk the ordered photo list: keep existing URLs as-is, upload new
-      // files (downscaled), preserving order and item tags throughout.
+      // files (downscaled), preserving order and item tags throughout. Tags
+      // that no longer match a saved item are dropped rather than stored
+      // dangling.
       const photoUrls: string[] = [];
       const photoTags: (string | null)[] = [];
       for (const entry of photos) {
@@ -349,7 +391,8 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
             ? entry.url
             : await uploadPhoto(await downscaleImage(entry.file)),
         );
-        photoTags.push(entry.tag);
+        const tag = entry.tag?.trim() ?? null;
+        photoTags.push(tag && validTagNames.has(tag) ? tag : null);
       }
 
       const payload = {
@@ -357,9 +400,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
         area: area.trim(),
         date,
         scores,
-        items: items
-          .filter((it) => it.name.trim())
-          .map((it) => ({ ...it, name: it.name.trim() })),
+        items: itemsPayload,
         verdict: verdict.trim(),
         photos: photoUrls,
         // Only send lat/lng and photoTags when they carry something (or the
@@ -373,7 +414,9 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
       };
 
       if (isEdit && existing) {
-        await updateCafe(existing.id, payload);
+        // Keep the slug stable on edit: links already shared (Instagram, chats)
+        // must survive a rename — updateCafe would otherwise re-derive it.
+        await updateCafe(existing.id, { ...payload, slug: existing.slug });
       } else {
         await createCafe(payload);
       }
