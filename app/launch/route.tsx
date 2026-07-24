@@ -80,7 +80,7 @@ export async function GET() {
         </div>
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={heroCupUri()} width={440} height={306} alt="" />
+        <img src={heroCupUri()} width={520} height={362} alt="" />
 
         <div style={{ display: "flex", fontFamily: "Newsreader", fontStyle: "italic", fontSize: 44, lineHeight: 1.4, maxWidth: 840 }}>
           {SITE.tagline}
@@ -99,7 +99,7 @@ export async function GET() {
             padding: "18px 40px",
           }}
         >
-          NOW POURING · BEANTHERE.BLOG
+          BEANTHERE.BLOG
         </div>
       </div>
     ),
