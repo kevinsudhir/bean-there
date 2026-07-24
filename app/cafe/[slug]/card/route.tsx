@@ -369,7 +369,9 @@ export async function GET(
   }
 
   // ---- scorecard slide ----
-  const items = cafe.items.filter((it) => it.name.trim()).slice(0, 4);
+  const namedItems = cafe.items.filter((it) => it.name.trim());
+  const items = namedItems.slice(0, 4);
+  const extraItems = namedItems.length - items.length;
   // Size the name down for long ones so it never overruns the padding.
   const nameSize = cafe.name.length > 24 ? 56 : cafe.name.length > 16 ? 70 : 90;
   const verdict = truncate(cafe.verdict || "", 170);
@@ -443,6 +445,11 @@ export async function GET(
               </div>
             );
           })}
+          {extraItems > 0 && (
+            <div style={{ fontFamily: "SpaceMono", fontSize: 24, letterSpacing: 2, color: DIM }}>
+              {`+${extraItems} MORE ON BEANTHERE.BLOG`}
+            </div>
+          )}
         </div>
 
         <div

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import type { Who } from "@/lib/types";
 import { getCafeBySlug } from "@/lib/cafes";
@@ -144,11 +145,12 @@ export default async function CafePage({
       {cafe.photos.length > 0 && (
         <div className="no-scrollbar flex w-full snap-x justify-center gap-3 overflow-x-auto pb-2 [justify-content:safe_center]">
           {cafe.photos.map((src, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               key={i}
               src={src}
               alt={`${cafe.name} photo ${i + 1}`}
+              width={210}
+              height={280}
               className="h-[280px] w-[210px] flex-none snap-start rounded-xl border-[1.5px] border-line object-cover"
             />
           ))}

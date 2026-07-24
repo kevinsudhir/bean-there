@@ -57,7 +57,7 @@ Events flow **back up** via callback functions (`onOpen`, `onChange`).
 - **`Wall`** — owns shared state; renders **`DesktopWall`** (grid/map + `ReviewModal`) and **`MobileWall`** (list/gallery/map + `ReviewSheet`); CSS breakpoints pick which shows.
 - **`ReviewContent`** — the review body (shared by modal + sheet); Save/Share carousel buttons.
 - **`Controls` / `MobileControls`** — search, sort, area, Loved filter, Grid/Map (desktop) or list/gallery/map cycle (mobile), theme.
-- **`AddCafeForm`** — the no-code add/edit form; photo upload + per-photo item tagging + cover choice; writes via `createCafe`/`updateCafe`/`deleteCafe`.
+- **`AddCafeForm`** — the no-code add/edit form; owns all form state and the save/delete/draft/geocode handlers, composing the visual sections in `components/form/` (Photos, Location, Scores, Items, Tags, Verdict); writes via `createCafe`/`updateCafe`/`deleteCafe`.
 - **`AuthProvider` / `RequireAuth` / `AddCafeButton` / `EditCafeLink`** — login state (context) and the UI that appears only when signed in.
 - **`ThemeProvider` / `ThemeToggle`** — light/dark via React Context.
 - **`PourGame` / `WallEmpty` / `WallLoading`** — the empty/loading states (with the mini pour game).

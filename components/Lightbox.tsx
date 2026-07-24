@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef } from "react";
 
 /**
@@ -77,15 +78,19 @@ export default function Lightbox({
             key={i}
             className="flex h-[100vh] w-[80vw] flex-none items-center justify-center"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            {/* width/height are an aspect hint; h-auto/w-auto let the photo's
+                real ratio take over once loaded. */}
+            <Image
               src={src}
               alt={`Café photo ${i + 1} of ${n}`}
+              width={1080}
+              height={1350}
+              sizes="76vw"
               onClick={(e) => {
                 e.stopPropagation();
                 if (i !== index) onIndex(i);
               }}
-              className={`max-h-[82vh] max-w-[76vw] rounded-2xl object-contain transition-all duration-300 ${
+              className={`h-auto max-h-[82vh] w-auto max-w-[76vw] rounded-2xl object-contain transition-all duration-300 ${
                 i === index
                   ? ""
                   : "scale-90 cursor-pointer opacity-45 blur-[3px]"

@@ -2,32 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Cafe, CafeItem, ItemType, Scores, Who } from "@/lib/types";
-import { SCORE_CATEGORIES } from "@/lib/types";
-import { overallScore, SITE, SUGGESTED_TAGS } from "@/lib/config";
+import type { Cafe, CafeItem, Scores } from "@/lib/types";
+import { overallScore, SITE, toSlug } from "@/lib/config";
 import { createCafe, updateCafe, deleteCafe, getCafeBySlug } from "@/lib/cafes";
 import { revalidateCafes } from "@/lib/actions";
-import { toSlug } from "@/lib/config";
-import { uploadPhoto } from "@/lib/upload";
+import { uploadPhoto, downscaleImage } from "@/lib/upload";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
-
-const ITEM_TYPES: ItemType[] = [
-  "mocha",
-  "latte",
-  "cappuccino",
-  "filter",
-  "cold",
-  "bake",
-  "dessert",
-  "food",
-];
-
-// How each item type is shown in the dropdown. Only differs from the raw value
-// where a friendlier word reads better (e.g. the "food" type shows as "bites").
-const TYPE_LABEL: Partial<Record<ItemType, string>> = {
-  food: "bites",
-};
-const WHO: Who[] = ["him", "her", "shared"];
+import { field, label, clampScore } from "./form/shared";
+import PhotosSection, { type PhotoEntry } from "./form/PhotosSection";
+import LocationSection from "./form/LocationSection";
+import ScoresSection from "./form/ScoresSection";
+import ItemsSection, { type QuickPick } from "./form/ItemsSection";
+import TagsSection from "./form/TagsSection";
+import VerdictSection from "./form/VerdictSection";
 
 const emptyItem = (): CafeItem => ({
   type: "latte",
@@ -37,58 +24,14 @@ const emptyItem = (): CafeItem => ({
   star: false,
 });
 
-// min/max on a number input only constrain the spinner, not typed values, so
-// every score/rating is clamped to 0–5 (and NaN from a cleared field becomes 0).
-const clampScore = (n: number): number =>
-  Number.isFinite(n) ? Math.min(5, Math.max(0, Math.round(n * 10) / 10)) : 0;
-
-// Shrink a picked image to a share-friendly size and re-encode as JPEG, so huge
-// phone photos don't bloat the page or make the share-card renderer choke/500.
-// Falls back to the original file if the browser can't decode it (e.g. HEIC).
-async function downscaleImage(file: File): Promise<File> {
-  if (!file.type.startsWith("image/")) return file;
-  try {
-    const bitmap = await createImageBitmap(file);
-    const max = 1600;
-    const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
-    const w = Math.round(bitmap.width * scale);
-    const h = Math.round(bitmap.height * scale);
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
-    ctx.drawImage(bitmap, 0, 0, w, h);
-    const blob = await new Promise<Blob | null>((res) =>
-      canvas.toBlob(res, "image/jpeg", 0.85),
-    );
-    if (!blob) return file;
-    return new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.jpg`, {
-      type: "image/jpeg",
-    });
-  } catch {
-    return file;
-  }
-}
-
-// A photo in the form: either one already saved (URL) or a newly picked file.
-// `url` is the src to preview (public URL, or an object URL for new files).
-type PhotoEntry =
-  | { kind: "existing"; url: string; tag: string | null }
-  | { kind: "new"; file: File; url: string; tag: string | null };
-
-const label = "mb-1.5 block font-mono text-xs uppercase tracking-wide text-dim";
-const field =
-  "w-full min-w-0 max-w-full rounded-lg border-[1.5px] border-line bg-transparent px-3 py-2.5 text-sm text-ink outline-none focus:border-ink";
-
 /**
  * The café form, used for BOTH adding and editing. Pass `existing` to edit a
  * café (fields pre-fill, a Delete button appears, and saving updates instead
  * of inserting). With no `existing`, it's a blank "add" form.
  *
- * Fills in name/area/date, the five scores (overall + badge calculated live),
- * any number of items with a star for the standout, photo uploads, and the
- * verdict — then saves to Supabase.
+ * This component owns all the state and the save/delete/draft/geocode
+ * handlers; the visual sections live in components/form/ and are handed
+ * state + callbacks.
  */
 export default function AddCafeForm({ existing }: { existing?: Cafe }) {
   const router = useRouter();
@@ -113,7 +56,6 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
   );
   const [verdict, setVerdict] = useState(existing?.verdict ?? "");
   const [tags, setTags] = useState<string[]>(existing?.tags ?? []);
-  const [customTag, setCustomTag] = useState("");
   const [drafting, setDrafting] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
   // All photos as one ordered list (saved URLs + newly picked files), each with
@@ -141,24 +83,6 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
   // Item names that a photo can be tagged with (drives the tag dropdowns).
   const itemNames = items.map((it) => it.name.trim()).filter(Boolean);
 
-  const hasTag = (label: string) =>
-    tags.some((t) => t.toLowerCase() === label.toLowerCase());
-  const toggleTag = (label: string) =>
-    setTags((cur) =>
-      hasTag(label)
-        ? cur.filter((t) => t.toLowerCase() !== label.toLowerCase())
-        : [...cur, label],
-    );
-  const addCustomTag = () => {
-    const t = customTag.trim();
-    if (t && !hasTag(t)) setTags((cur) => [...cur, t]);
-    setCustomTag("");
-  };
-  // Custom tags = selected tags that aren't in the suggested set.
-  const customTags = tags.filter(
-    (t) => !SUGGESTED_TAGS.some((s) => s.label.toLowerCase() === t.toLowerCase()),
-  );
-
   // Revoke any object URLs created for new-file previews when we unmount.
   useEffect(() => () => objectUrls.current.forEach(URL.revokeObjectURL), []);
 
@@ -183,25 +107,9 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
   const setPhotoTag = (i: number, tag: string | null) =>
     setPhotos((p) => p.map((e, j) => (j === i ? { ...e, tag } : e)));
 
-  // A small "tag this photo with an item" dropdown, shared by both photo lists.
-  const tagSelect = (value: string | null, onChange: (v: string | null) => void) => (
-    <select
-      value={value ?? ""}
-      onChange={(e) => onChange(e.target.value || null)}
-      aria-label="Tag photo with an item"
-      className="mt-1 w-[76px] rounded border-[1.5px] border-line bg-card px-1 py-1 font-mono text-[9px] text-ink outline-none"
-    >
-      <option value="">— tag —</option>
-      {itemNames.map((n) => (
-        <option key={n} value={n}>
-          {n}
-        </option>
-      ))}
-    </select>
-  );
-
   const setScore = (cat: keyof Scores, value: number) =>
     setScores((s) => ({ ...s, [cat]: clampScore(value) }));
+
   const setItem = (i: number, patch: Partial<CafeItem>) => {
     // Renaming an item drags its photo tags along, so a photo tagged "Mocha"
     // still labels the right slide after the item becomes "Iced Mocha".
@@ -217,24 +125,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
     setItems((list) => list.map((it, j) => (j === i ? { ...it, ...patch } : it)));
   };
   const addItem = () => setItems((list) => [...list, emptyItem()]);
-
-  // Quick-pick presets: one tap adds a pre-filled item (type, name, who) with a
-  // default 4.0 rating you then adjust. Speeds up the common orders.
-  const QUICK_PICKS: {
-    label: string;
-    type: ItemType;
-    name: string;
-    who: Who;
-  }[] = [
-    { label: "Mocha", type: "mocha", name: "Mocha", who: "him" },
-    { label: "Latte", type: "latte", name: "Latte", who: "him" },
-    { label: "Cappuccino", type: "cappuccino", name: "Cappuccino", who: "her" },
-    { label: "Flat white", type: "latte", name: "Flat White", who: "him" },
-    { label: "Bake", type: "bake", name: "", who: "shared" },
-    { label: "Bites", type: "food", name: "", who: "shared" },
-  ];
-
-  const addQuickItem = (p: (typeof QUICK_PICKS)[number]) =>
+  const addQuickItem = (p: QuickPick) =>
     setItems((list) => {
       const next: CafeItem = {
         type: p.type,
@@ -244,8 +135,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
         star: false,
       };
       // If the only row is a blank starter, replace it; otherwise append.
-      const onlyBlankStarter =
-        list.length === 1 && !list[0].name.trim();
+      const onlyBlankStarter = list.length === 1 && !list[0].name.trim();
       return onlyBlankStarter ? [next] : [...list, next];
     });
   const removeItem = (i: number) => {
@@ -434,11 +324,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
 
   async function handleDelete() {
     if (!existing) return;
-    if (
-      !window.confirm(
-        `Delete "${existing.name}"? This can't be undone.`,
-      )
-    )
+    if (!window.confirm(`Delete "${existing.name}"? This can't be undone.`))
       return;
     setDeleting(true);
     setError(null);
@@ -520,337 +406,50 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
           </div>
         </div>
 
-        {photos.length > 0 && (
-          <div>
-            <label className={label}>
-              Photos — pick the cover and tag each with the item it shows
-            </label>
-            <div className="flex flex-wrap gap-3">
-              {photos.map((p, i) => (
-                <div key={p.url} className="flex flex-col items-center gap-1">
-                  <div className="relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={p.url}
-                      alt={p.kind === "new" ? "New photo" : "Review photo"}
-                      className={`h-24 w-[76px] rounded-lg border-[1.5px] object-cover ${p.kind === "new" ? "border-amber" : "border-line"}`}
-                    />
-                    {i === 0 && (
-                      <span className="absolute left-1 top-1 rounded bg-amber px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wide text-white">
-                        Cover
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => removePhoto(i)}
-                      aria-label="Remove photo"
-                      className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border-[1.5px] border-line bg-bg text-[10px] text-ink"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  {i !== 0 && (
-                    <button
-                      type="button"
-                      onClick={() => makeCover(i)}
-                      className="font-mono text-[8px] uppercase tracking-wide text-amber"
-                    >
-                      Make cover
-                    </button>
-                  )}
-                  {tagSelect(p.tag, (v) => setPhotoTag(i, v))}
-                </div>
-              ))}
-            </div>
-            <p className="mt-1.5 font-mono text-[10px] italic text-dim">
-              The cover is the carousel&apos;s first slide. Tagged photos get
-              that item&apos;s score on their slide; untagged ones show the
-              overall score.
-            </p>
-          </div>
-        )}
+        <PhotosSection
+          photos={photos}
+          itemNames={itemNames}
+          onRemove={removePhoto}
+          onMakeCover={makeCover}
+          onTag={setPhotoTag}
+        />
 
-        <div>
-          <div className="mb-1.5 flex items-center justify-between">
-            <label className={`${label} mb-0`}>
-              Location (for the map view)
-            </label>
-            <button
-              type="button"
-              onClick={findLocation}
-              disabled={locating}
-              className="rounded-pill border-[1.5px] border-amber px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-amber disabled:opacity-40"
-            >
-              {locating ? "Finding…" : "◎ Find location"}
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-4 sm:max-w-[420px]">
-            <input
-              type="number"
-              step="any"
-              className={field}
-              value={lat ?? ""}
-              onChange={(e) =>
-                setLat(e.target.value === "" ? null : Number(e.target.value))
-              }
-              placeholder="Latitude"
-              aria-label="Latitude"
-            />
-            <input
-              type="number"
-              step="any"
-              className={field}
-              value={lng ?? ""}
-              onChange={(e) =>
-                setLng(e.target.value === "" ? null : Number(e.target.value))
-              }
-              placeholder="Longitude"
-              aria-label="Longitude"
-            />
-          </div>
-          {locMessage && (
-            <p className="mt-1.5 font-mono text-[10px] text-dim">{locMessage}</p>
-          )}
-          <p className="mt-1.5 font-mono text-[10px] italic text-dim">
-            Optional — pins the café on the map. Pasting from Google Maps is
-            most accurate (right-click the café → click the numbers to copy) —
-            paste, then save without pressing Find. Find looks it up by name
-            and replaces whatever is in the boxes.
-          </p>
-        </div>
+        <LocationSection
+          lat={lat}
+          lng={lng}
+          locating={locating}
+          message={locMessage}
+          onLat={setLat}
+          onLng={setLng}
+          onFind={findLocation}
+        />
 
-        <div>
-          <label className={label}>Scores</label>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            {SCORE_CATEGORIES.map((cat) => (
-              <div
-                key={cat}
-                className="flex flex-col items-center rounded-lg bg-card p-3"
-              >
-                <span className="font-mono text-[10px] uppercase tracking-wide text-dim">
-                  {cat}
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  max={5}
-                  step={0.1}
-                  value={scores[cat]}
-                  onChange={(e) => setScore(cat, Number(e.target.value))}
-                  aria-label={`${cat} score`}
-                  className="my-1 w-16 rounded-md border-[1.5px] border-line bg-transparent text-center font-display text-xl font-extrabold text-ink outline-none focus:border-amber"
-                />
-                <input
-                  type="range"
-                  min={0}
-                  max={5}
-                  step={0.1}
-                  value={scores[cat]}
-                  onChange={(e) => setScore(cat, Number(e.target.value))}
-                  aria-label={`${cat} slider`}
-                  className="w-full accent-amber"
-                />
-              </div>
-            ))}
-          </div>
-          <div className="mt-2 font-mono text-xs text-amber">
-            Overall {overall.toFixed(1)} / 5{loved ? " — ★ Loved" : ""}
-          </div>
-        </div>
+        <ScoresSection
+          scores={scores}
+          overall={overall}
+          loved={loved}
+          onScore={setScore}
+        />
 
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <label className={`${label} mb-0`}>What we had</label>
-            <button
-              onClick={addItem}
-              className="rounded-pill border-[1.5px] border-line px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide"
-            >
-              + Add item
-            </button>
-          </div>
+        <ItemsSection
+          items={items}
+          onSet={setItem}
+          onAdd={addItem}
+          onQuick={addQuickItem}
+          onRemove={removeItem}
+        />
 
-          {/* Quick-pick presets — one tap adds a pre-filled item */}
-          <div className="mb-3 flex flex-wrap gap-2">
-            {QUICK_PICKS.map((p) => (
-              <button
-                key={p.label}
-                type="button"
-                onClick={() => addQuickItem(p)}
-                className="rounded-pill border-[1.5px] border-amber px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-amber"
-              >
-                + {p.label}
-              </button>
-            ))}
-          </div>
+        <TagsSection tags={tags} onTags={setTags} />
 
-          <div className="flex flex-col gap-3">
-            {items.map((it, i) => (
-              <div
-                key={i}
-                className="grid grid-cols-1 gap-2 rounded-lg border-[1.5px] border-line p-3 [&>*]:min-w-0 sm:grid-cols-[1fr_1fr_auto_auto_auto_auto] sm:items-center"
-              >
-                <input
-                  className={field}
-                  value={it.name}
-                  onChange={(e) => setItem(i, { name: e.target.value })}
-                  placeholder="Item name (e.g. Cappuccino)"
-                />
-                <select
-                  className={field}
-                  value={it.type}
-                  onChange={(e) =>
-                    setItem(i, { type: e.target.value as ItemType })
-                  }
-                >
-                  {ITEM_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {TYPE_LABEL[t] ?? t}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className={field}
-                  value={it.who}
-                  onChange={(e) => setItem(i, { who: e.target.value as Who })}
-                >
-                  {WHO.map((w) => (
-                    <option key={w} value={w}>
-                      {w}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  min={0}
-                  max={5}
-                  step={0.1}
-                  className={`${field} sm:w-20`}
-                  value={it.rating}
-                  onChange={(e) =>
-                    setItem(i, { rating: clampScore(Number(e.target.value)) })
-                  }
-                />
-                <input
-                  type="number"
-                  min={0}
-                  step={0.1}
-                  className={`${field} sm:w-24`}
-                  value={it.price ?? ""}
-                  onChange={(e) =>
-                    setItem(i, {
-                      price:
-                        e.target.value === ""
-                          ? undefined
-                          : Math.max(0, Number(e.target.value) || 0),
-                    })
-                  }
-                  placeholder="£ price"
-                  aria-label="Price in pounds"
-                />
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setItem(i, { star: !it.star })}
-                    aria-label="Mark as standout"
-                    className={`h-9 w-9 rounded-full border-[1.5px] ${it.star ? "border-amber text-amber" : "border-line text-dim"}`}
-                  >
-                    ★
-                  </button>
-                  {items.length > 1 && (
-                    <button
-                      onClick={() => removeItem(i)}
-                      aria-label="Remove item"
-                      className="h-9 w-9 rounded-full border-[1.5px] border-line text-dim"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <VerdictSection
+          verdict={verdict}
+          drafting={drafting}
+          error={draftError}
+          onVerdict={setVerdict}
+          onDraft={draftVerdict}
+        />
 
-        <div>
-          <label className={label}>Vibe tags</label>
-          <div className="flex flex-wrap gap-2">
-            {SUGGESTED_TAGS.map(({ label: l, emoji }) => (
-              <button
-                key={l}
-                type="button"
-                onClick={() => toggleTag(l)}
-                className={`rounded-pill border-[1.5px] px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide ${
-                  hasTag(l)
-                    ? "border-amber bg-amber text-white"
-                    : "border-line text-ink"
-                }`}
-              >
-                {emoji} {l}
-              </button>
-            ))}
-            {customTags.map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => toggleTag(t)}
-                aria-label={`Remove ${t}`}
-                className="rounded-pill border-[1.5px] border-amber bg-amber px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-white"
-              >
-                {t} ✕
-              </button>
-            ))}
-          </div>
-          <div className="mt-2 flex gap-2">
-            <input
-              value={customTag}
-              onChange={(e) => setCustomTag(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addCustomTag();
-                }
-              }}
-              placeholder="Add a custom tag"
-              className={`${field} max-w-[240px]`}
-            />
-            <button
-              type="button"
-              onClick={addCustomTag}
-              className="flex-none rounded-pill border-[1.5px] border-line px-4 font-mono text-[11px] uppercase tracking-wide"
-            >
-              Add
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-1.5 flex items-center justify-between">
-            <label className={`${label} mb-0`}>Verdict</label>
-            <button
-              type="button"
-              onClick={draftVerdict}
-              disabled={drafting}
-              className="rounded-pill border-[1.5px] border-amber px-3 py-1.5 font-mono text-[11px] uppercase tracking-wide text-amber disabled:opacity-40"
-            >
-              {drafting ? "Drafting…" : "✨ Draft with AI"}
-            </button>
-          </div>
-          <textarea
-            className={`${field} min-h-[90px] font-voice italic`}
-            value={verdict}
-            onChange={(e) => setVerdict(e.target.value)}
-            placeholder="A canalside bakery firing on all cylinders…"
-          />
-          {draftError && (
-            <p className="mt-1.5 font-mono text-xs text-red-700">{draftError}</p>
-          )}
-          <p className="mt-1.5 font-mono text-[10px] italic text-dim">
-            AI draft — always read it over and make it yours before saving.
-          </p>
-        </div>
-
-        {error && (
-          <p className="font-mono text-xs text-red-700">{error}</p>
-        )}
+        {error && <p className="font-mono text-xs text-red-700">{error}</p>}
 
         <div className="flex flex-wrap gap-3">
           <button
@@ -858,11 +457,7 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
             disabled={saving || deleting || !isSupabaseConfigured}
             className="h-11 rounded-pill bg-ink px-6 font-mono text-xs uppercase tracking-wide text-bg disabled:opacity-40"
           >
-            {saving
-              ? "Saving…"
-              : isEdit
-                ? "Save changes"
-                : "Publish café"}
+            {saving ? "Saving…" : isEdit ? "Save changes" : "Publish café"}
           </button>
           <button
             onClick={() => router.push("/")}

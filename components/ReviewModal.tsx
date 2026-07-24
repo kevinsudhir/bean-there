@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import type { Cafe } from "@/lib/types";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 import ReviewContent from "./ReviewContent";
 
 /**
@@ -16,6 +17,9 @@ export default function ReviewModal({
   cafe: Cafe | null;
   onClose: () => void;
 }) {
+  // Keep Tab inside the dialog while it's open; restore focus on close.
+  const trapRef = useFocusTrap<HTMLDivElement>(Boolean(cafe));
+
   useEffect(() => {
     if (!cafe) return;
     const onKey = (e: KeyboardEvent) => {
@@ -38,7 +42,14 @@ export default function ReviewModal({
       }}
       className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[rgba(20,14,7,0.55)] p-5"
     >
-      <div className="relative m-auto flex w-full max-w-[1240px] flex-col items-center gap-3.5 rounded-[22px] border-[1.5px] border-ink bg-bg px-6 py-6 text-center sm:px-14">
+      <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${cafe.name} review`}
+        tabIndex={-1}
+        className="relative m-auto flex w-full max-w-[1240px] flex-col items-center gap-3.5 rounded-[22px] border-[1.5px] border-ink bg-bg px-6 py-6 text-center outline-none sm:px-14"
+      >
         <button
           onClick={onClose}
           aria-label="Close"

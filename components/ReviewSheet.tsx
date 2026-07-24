@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Cafe } from "@/lib/types";
+import { useFocusTrap } from "@/lib/useFocusTrap";
 import ReviewContent from "./ReviewContent";
 
 /**
@@ -24,6 +25,8 @@ export default function ReviewSheet({
   const startY = useRef<number | null>(null);
   const dragging = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Keep Tab inside the sheet while it's open; restore focus on close.
+  const trapRef = useFocusTrap<HTMLDivElement>(Boolean(cafe));
 
   useEffect(() => {
     if (!cafe) return;
@@ -99,6 +102,11 @@ export default function ReviewSheet({
 
       {/* Sheet — the whole thing is draggable */}
       <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${cafe.name} review`}
+        tabIndex={-1}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -107,7 +115,7 @@ export default function ReviewSheet({
             ? { transform: `translateY(${dragY}px)`, transition: "none" }
             : undefined
         }
-        className={`absolute inset-x-0 bottom-0 max-h-[92%] touch-pan-y overflow-hidden rounded-t-[26px] bg-bg transition-transform duration-300 ${shown ? "translate-y-0" : "translate-y-full"}`}
+        className={`absolute inset-x-0 bottom-0 max-h-[92%] touch-pan-y overflow-hidden rounded-t-[26px] bg-bg outline-none transition-transform duration-300 ${shown ? "translate-y-0" : "translate-y-full"}`}
       >
         {/* Drag handle + close button */}
         <div className="sticky top-0 z-10 flex items-center justify-center bg-bg pb-1 pt-3">
