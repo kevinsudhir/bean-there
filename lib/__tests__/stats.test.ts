@@ -22,12 +22,46 @@ describe("siteStats", () => {
     const s = siteStats([]);
     expect(s).toMatchObject({
       cafes: 0,
+      visits: 0,
       cups: 0,
       spent: 0,
       averageScore: 0,
       topArea: null,
       bestCafe: null,
     });
+  });
+
+  it("counts cups and spend across every visit, not just the latest", () => {
+    const s = siteStats([
+      makeCafe({
+        date: "2026-11-01",
+        items: [{ type: "mocha", name: "Mocha", who: "him", rating: 5, price: 4 }],
+        visits: [
+          {
+            date: "2026-11-01",
+            scores: { coffee: 4, food: 4, vibe: 4, service: 4, value: 4 },
+            items: [
+              { type: "mocha", name: "Mocha", who: "him", rating: 5, price: 4 },
+            ],
+            verdict: "",
+            photos: [],
+          },
+          {
+            date: "2026-05-01",
+            scores: { coffee: 4, food: 4, vibe: 4, service: 4, value: 4 },
+            items: [
+              { type: "latte", name: "Latte", who: "her", rating: 4, price: 3 },
+            ],
+            verdict: "",
+            photos: [],
+          },
+        ],
+      }),
+    ]);
+    expect(s.cafes).toBe(1);
+    expect(s.visits).toBe(2);
+    expect(s.cups).toBe(2);
+    expect(s.spent).toBe(7);
   });
 
   it("counts cafés, cups and money spent", () => {

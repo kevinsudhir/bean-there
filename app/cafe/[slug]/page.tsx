@@ -12,6 +12,7 @@ import {
 } from "@/lib/config";
 import CupIcon from "@/components/CupIcon";
 import { CafeJsonLd } from "@/components/StructuredData";
+import VisitHistory from "@/components/VisitHistory";
 import ScorePills from "@/components/ScorePills";
 import EditCafeLink from "@/components/EditCafeLink";
 
@@ -158,6 +159,8 @@ export default async function CafePage({
           ))}
         </div>
       )}
+
+      <VisitHistory cafe={cafe} />
 
       <div className="font-mono text-[10px] uppercase tracking-widest text-dim">
         Reviewed by <b className="text-amber">{SITE.reviewers.him}</b> &amp;{" "}

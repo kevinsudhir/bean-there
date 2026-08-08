@@ -17,6 +17,7 @@ import { useAuth } from "./AuthProvider";
 import CupIcon from "./CupIcon";
 import ScorePills from "./ScorePills";
 import PhotoStrip from "./PhotoStrip";
+import VisitHistory from "./VisitHistory";
 import Lightbox from "./Lightbox";
 
 const whoLabel: Record<Who, string> = {
@@ -225,6 +226,8 @@ export default function ReviewContent({ cafe }: { cafe: Cafe }) {
       </p>
 
       <PhotoStrip photos={cafe.photos} onOpen={setLightbox} />
+
+      <VisitHistory cafe={cafe} />
 
       <div className="font-mono text-[10px] uppercase tracking-widest text-dim">
         Reviewed by <b className="text-amber">{SITE.reviewers.him}</b> &amp;{" "}

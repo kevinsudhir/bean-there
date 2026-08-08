@@ -1,5 +1,4 @@
 import type { Cafe } from "@/lib/types";
-import { SITE } from "@/lib/config";
 import { siteStats, formatMoney } from "@/lib/stats";
 
 /**
@@ -13,6 +12,8 @@ export default function StatsStrip({ cafes }: { cafes: Cafe[] }) {
   if (cafes.length === 0) return null;
   const s = siteStats(cafes);
 
+  // Deliberately just the running totals — the scores live on the cafés
+  // themselves, so repeating averages here only crowded the header.
   const stats: { value: string; label: string }[] = [
     { value: String(s.cafes), label: s.cafes === 1 ? "café" : "cafés" },
     { value: String(s.cups), label: s.cups === 1 ? "cup" : "cups" },
@@ -21,13 +22,6 @@ export default function StatsStrip({ cafes }: { cafes: Cafe[] }) {
   if (s.priced > 0) {
     stats.push({ value: formatMoney(s.spent), label: "spent" });
   }
-  stats.push({ value: s.averageScore.toFixed(1), label: "avg score" });
-  if (s.loved > 0) stats.push({ value: String(s.loved), label: "loved" });
-  if (s.topArea) stats.push({ value: s.topArea, label: "top area" });
-
-  const him = s.byWho.him;
-  const her = s.byWho.her;
-  const bothRate = him.items > 0 && her.items > 0;
 
   return (
     <section aria-label="The numbers so far" className="px-5 pt-4 sm:px-16 sm:pt-5">
@@ -47,26 +41,6 @@ export default function StatsStrip({ cafes }: { cafes: Cafe[] }) {
             </span>
           </div>
         ))}
-
-        {bothRate && (
-          <div className="flex flex-none items-baseline gap-1.5 sm:ml-auto">
-            <span className="font-mono text-[9px] uppercase tracking-widest text-dim sm:text-[10px]">
-              {SITE.reviewers.him}
-            </span>
-            <span className="font-display text-lg font-extrabold leading-none text-ink sm:text-xl">
-              {him.average.toFixed(1)}
-            </span>
-            <span className="font-mono text-[9px] uppercase tracking-widest text-dim sm:text-[10px]">
-              vs
-            </span>
-            <span className="font-display text-lg font-extrabold leading-none text-ink sm:text-xl">
-              {her.average.toFixed(1)}
-            </span>
-            <span className="font-mono text-[9px] uppercase tracking-widest text-dim sm:text-[10px]">
-              {SITE.reviewers.her}
-            </span>
-          </div>
-        )}
       </div>
     </section>
   );

@@ -2,6 +2,7 @@
 
 import type { Cafe } from "@/lib/types";
 import { overallScore, isLoved } from "@/lib/config";
+import { visitCount, scoreDelta, formatDelta } from "@/lib/visits";
 import WallCup from "./WallCup";
 
 /**
@@ -19,6 +20,8 @@ export default function CafeCard({
 }) {
   const overall = overallScore(cafe.scores);
   const loved = isLoved(cafe);
+  const visits = visitCount(cafe);
+  const delta = scoreDelta(cafe);
 
   return (
     <div
@@ -40,6 +43,12 @@ export default function CafeCard({
         </span>
       )}
 
+      {visits > 1 && (
+        <span className="absolute left-4 top-4 z-10 rounded-pill bg-amber px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-white">
+          {visits} visits
+        </span>
+      )}
+
       <WallCup scores={cafe.scores} overall={overall} />
 
       <div className="text-center">
@@ -49,9 +58,23 @@ export default function CafeCard({
         <div className="mt-1.5 font-mono text-[10px] uppercase tracking-widest text-dim">
           {cafe.area}
         </div>
-        <div className="mt-1.5 font-display text-xl font-extrabold text-amber">
-          {overall.toFixed(1)}
-          <small className="text-[0.5em] font-normal text-dim"> / 5</small>
+        <div className="mt-1.5 flex items-center justify-center gap-2">
+          <span className="font-display text-xl font-extrabold text-amber">
+            {overall.toFixed(1)}
+            <small className="text-[0.5em] font-normal text-dim"> / 5</small>
+          </span>
+          {delta !== null && delta !== 0 && (
+            <span
+              className={`rounded-pill px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide ${
+                delta > 0
+                  ? "bg-green-100 text-green-900"
+                  : "bg-red-100 text-red-900"
+              }`}
+              title="Change since our last visit"
+            >
+              {formatDelta(delta)}
+            </span>
+          )}
         </div>
       </div>
     </div>

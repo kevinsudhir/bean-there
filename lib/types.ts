@@ -47,6 +47,21 @@ export interface CafeItem {
   price?: number;
 }
 
+/**
+ * One visit to a cafe — what we had, how we scored it, and what we said that
+ * day. A cafe's headline score is its most recent visit (the current verdict).
+ */
+export interface Visit {
+  /** ISO date of the visit, e.g. "2026-06-12". */
+  date: string;
+  scores: Scores;
+  items: CafeItem[];
+  verdict: string;
+  photos: string[];
+  /** Per-photo item tag, parallel to photos. */
+  photoTags?: (string | null)[];
+}
+
 /** A full cafe review. */
 export interface Cafe {
   id: string;
@@ -72,4 +87,11 @@ export interface Cafe {
   lng?: number | null;
   /** Vibe tags (plain labels, e.g. "Aesthetic"). Emoji/# are presentation. */
   tags?: string[];
+  /**
+   * Every visit, newest first. The fields above mirror visits[0] — the current
+   * verdict — so anything reading `cafe.scores` still sees the latest review.
+   * Absent or empty on cafes saved before revisits existed; `visitsOf()`
+   * treats those as a single visit built from the fields above.
+   */
+  visits?: Visit[];
 }

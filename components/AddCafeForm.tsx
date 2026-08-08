@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Cafe, CafeItem, Scores } from "@/lib/types";
-import { overallScore, SITE, toSlug } from "@/lib/config";
+import type { Cafe, CafeItem, Scores, Visit } from "@/lib/types";
+import { overallScore, SITE, toSlug, formatVisitDate } from "@/lib/config";
+import { visitsOf, withCurrentVisit } from "@/lib/visits";
 import { createCafe, updateCafe, deleteCafe, getCafeBySlug } from "@/lib/cafes";
 import { revalidateCafes } from "@/lib/actions";
 import { uploadPhoto, downscaleImage } from "@/lib/upload";
@@ -37,13 +38,30 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
   const router = useRouter();
   const isEdit = Boolean(existing);
 
+  // Café-level fields — they describe the place, not a particular visit.
   const [name, setName] = useState(existing?.name ?? "");
   const [area, setArea] = useState(existing?.area ?? "");
+  const [tags, setTags] = useState<string[]>(existing?.tags ?? []);
+
+  /**
+   * Past visits (newest first, excluding the one being edited) and the
+   * visit currently in the form. Editing an older visit swaps it in here and
+   * pushes the current one back into `otherVisits`.
+   */
+  const initialVisits = existing ? visitsOf(existing) : [];
+  const [otherVisits, setOtherVisits] = useState<Visit[]>(
+    initialVisits.slice(1),
+  );
+  /** Which visit the form is editing: its date, or null for a brand-new one. */
+  const [editingDate, setEditingDate] = useState<string | null>(
+    initialVisits[0]?.date ?? null,
+  );
+
   const [date, setDate] = useState(
-    existing?.date ?? new Date().toISOString().slice(0, 10),
+    initialVisits[0]?.date ?? new Date().toISOString().slice(0, 10),
   );
   const [scores, setScores] = useState<Scores>(
-    existing?.scores ?? {
+    initialVisits[0]?.scores ?? {
       coffee: 4,
       food: 4,
       vibe: 4,
@@ -52,19 +70,18 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
     },
   );
   const [items, setItems] = useState<CafeItem[]>(
-    existing?.items?.length ? existing.items : [emptyItem()],
+    initialVisits[0]?.items?.length ? initialVisits[0].items : [emptyItem()],
   );
-  const [verdict, setVerdict] = useState(existing?.verdict ?? "");
-  const [tags, setTags] = useState<string[]>(existing?.tags ?? []);
+  const [verdict, setVerdict] = useState(initialVisits[0]?.verdict ?? "");
   const [drafting, setDrafting] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
   // All photos as one ordered list (saved URLs + newly picked files), each with
   // its item tag. The first entry is the cover; the order is chosen in the UI.
   const [photos, setPhotos] = useState<PhotoEntry[]>(
-    (existing?.photos ?? []).map((url, i) => ({
+    (initialVisits[0]?.photos ?? []).map((url, i) => ({
       kind: "existing" as const,
       url,
-      tag: existing?.photoTags?.[i] ?? null,
+      tag: initialVisits[0]?.photoTags?.[i] ?? null,
     })),
   );
   const objectUrls = useRef<string[]>([]);
@@ -76,6 +93,64 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /** The visit currently in the form, as it would be saved. */
+  const formVisit = (photoUrls: string[], photoTags: (string | null)[]): Visit => ({
+    date,
+    scores,
+    items: items
+      .filter((it) => it.name.trim())
+      .map((it) => ({ ...it, name: it.name.trim() })),
+    verdict: verdict.trim(),
+    photos: photoUrls,
+    photoTags,
+  });
+
+  /**
+   * Load a different visit into the form, parking the one being edited back
+   * in the list. Only existing (already-uploaded) photos survive the swap —
+   * files picked but not yet saved belong to the visit you were editing.
+   */
+  function switchToVisit(target: Visit | null) {
+    const parked: Visit = {
+      date,
+      scores,
+      items,
+      verdict,
+      photos: photos.filter((p) => p.kind === "existing").map((p) => p.url),
+      photoTags: photos
+        .filter((p) => p.kind === "existing")
+        .map((p) => p.tag),
+    };
+    const rest = otherVisits.filter((v) => v.date !== target?.date);
+    // Keep the parked visit only if it's a real saved one (not a blank new one).
+    const keepParked = editingDate !== null;
+    setOtherVisits(keepParked ? [parked, ...rest] : rest);
+
+    if (target) {
+      setEditingDate(target.date);
+      setDate(target.date);
+      setScores(target.scores);
+      setItems(target.items.length ? target.items : [emptyItem()]);
+      setVerdict(target.verdict);
+      setPhotos(
+        target.photos.map((url, i) => ({
+          kind: "existing" as const,
+          url,
+          tag: target.photoTags?.[i] ?? null,
+        })),
+      );
+    } else {
+      // A fresh visit: today's date, clean slate, café details carry over.
+      setEditingDate(null);
+      setDate(new Date().toISOString().slice(0, 10));
+      setScores({ coffee: 4, food: 4, vibe: 4, service: 4, value: 4 });
+      setItems([emptyItem()]);
+      setVerdict("");
+      setPhotos([]);
+    }
+    setError(null);
+  }
 
   const overall = useMemo(() => overallScore(scores), [scores]);
   const loved = overall >= SITE.badgeThreshold;
@@ -285,22 +360,35 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
         photoTags.push(tag && validTagNames.has(tag) ? tag : null);
       }
 
+      // The visit in the form, plus every other visit, newest first.
+      // withCurrentVisit mirrors the newest into the top-level fields, so the
+      // café's headline score is always its current verdict.
+      const allVisits = [
+        formVisit(photoUrls, photoTags),
+        ...otherVisits.filter((v) => v.date !== date),
+      ];
+      const current = withCurrentVisit({ visits: allVisits });
+
       const payload = {
         name: name.trim(),
         area: area.trim(),
-        date,
-        scores,
-        items: itemsPayload,
-        verdict: verdict.trim(),
-        photos: photoUrls,
-        // Only send lat/lng and photoTags when they carry something (or the
-        // café already had them) — a database that predates these columns
-        // would otherwise reject every save.
+        date: current.date,
+        scores: current.scores,
+        items: current.items,
+        verdict: current.verdict,
+        photos: current.photos,
+        // Only send the newer columns when they carry something (or the café
+        // already had them) — a database that predates them would otherwise
+        // reject every save.
         ...(lat !== null || existing?.lat != null ? { lat, lng } : {}),
-        ...(photoTags.some(Boolean) || existing?.photoTags
-          ? { photoTags }
+        ...(current.photoTags.some(Boolean) || existing?.photoTags
+          ? { photoTags: current.photoTags }
           : {}),
         ...(tags.length || existing?.tags ? { tags } : {}),
+        // Only record a visits array once there's real history to keep.
+        ...(current.visits.length > 1 || existing?.visits?.length
+          ? { visits: current.visits }
+          : {}),
       };
 
       if (isEdit && existing) {
@@ -358,6 +446,56 @@ export default function AddCafeForm({ existing }: { existing?: Cafe }) {
       )}
 
       <div className="flex flex-col gap-5">
+        {isEdit && (
+          <div className="rounded-lg border-[1.5px] border-line p-3">
+            <label className={label}>
+              Visit being edited — the newest one is the current verdict
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { date, isNew: editingDate === null, active: true },
+                ...otherVisits
+                  .filter((v) => v.date !== date)
+                  .map((v) => ({ date: v.date, isNew: false, active: false })),
+              ]
+                .sort((a, b) => (a.date < b.date ? 1 : -1))
+                .map((tab) => (
+                  <button
+                    key={tab.date}
+                    type="button"
+                    onClick={() =>
+                      tab.active
+                        ? undefined
+                        : switchToVisit(
+                            otherVisits.find((v) => v.date === tab.date) ?? null,
+                          )
+                    }
+                    className={`rounded-pill border-[1.5px] px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide ${
+                      tab.active
+                        ? "border-ink bg-ink text-bg"
+                        : "border-line text-ink"
+                    }`}
+                  >
+                    {tab.date ? formatVisitDate(tab.date) : "New visit"}
+                    {tab.isNew ? " · new" : ""}
+                  </button>
+                ))}
+
+              <button
+                type="button"
+                onClick={() => switchToVisit(null)}
+                className="rounded-pill border-[1.5px] border-dashed border-amber px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide text-amber"
+              >
+                + Log a revisit
+              </button>
+            </div>
+            <p className="mt-2 font-mono text-[10px] italic text-dim">
+              A revisit starts fresh scores, items, photos and verdict for a new
+              date. The name, area, location and vibe tags carry over.
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className={label}>Café name</label>

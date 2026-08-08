@@ -1,5 +1,6 @@
 import type { Cafe, Who } from "./types";
 import { overallScore, isLoved } from "./config";
+import { visitsOf } from "./visits";
 
 /**
  * Aggregates across every café — the numbers behind the stats strip and the
@@ -9,6 +10,8 @@ import { overallScore, isLoved } from "./config";
  */
 export interface SiteStats {
   cafes: number;
+  /** Total visits — more than `cafes` once we've been back somewhere. */
+  visits: number;
   /** Total items ordered across all visits (drinks + bakes + bites). */
   cups: number;
   /** Sum of every recorded item price. Items without a price count as 0. */
@@ -29,7 +32,10 @@ export interface SiteStats {
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
 export function siteStats(cafes: Cafe[]): SiteStats {
-  const items = cafes.flatMap((c) => c.items ?? []);
+  // Count every visit, not just the latest — going back to a café means more
+  // cups drunk and more money spent, and the numbers should say so.
+  const allVisits = cafes.flatMap((c) => visitsOf(c));
+  const items = allVisits.flatMap((v) => v.items ?? []);
   const pricedItems = items.filter((it) => typeof it.price === "number");
 
   // Most common area. Ties resolve alphabetically so the result is stable.
@@ -59,6 +65,7 @@ export function siteStats(cafes: Cafe[]): SiteStats {
 
   return {
     cafes: cafes.length,
+    visits: allVisits.length,
     cups: items.length,
     spent: round1(pricedItems.reduce((sum, it) => sum + (it.price ?? 0), 0)),
     priced: pricedItems.length,
