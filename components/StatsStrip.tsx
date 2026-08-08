@@ -1,5 +1,4 @@
 import type { Cafe } from "@/lib/types";
-import { SITE } from "@/lib/config";
 import { siteStats, formatMoney } from "@/lib/stats";
 
 /**
@@ -37,10 +36,6 @@ export default function StatsStrip({ cafes }: { cafes: Cafe[] }) {
   if (s.loved > 0) extra.push({ value: String(s.loved), label: "loved" });
   if (s.topArea) extra.push({ value: s.topArea, label: "top area" });
 
-  const him = s.byWho.him;
-  const her = s.byWho.her;
-  const bothRate = him.items > 0 && her.items > 0;
-
   const stat = (value: string, label: string, key: string, desktopOnly = false) => (
     <div
       key={key}
@@ -57,30 +52,11 @@ export default function StatsStrip({ cafes }: { cafes: Cafe[] }) {
 
   return (
     <section aria-label="The numbers so far" className="px-5 pt-4 sm:px-16 sm:pt-5">
-      {/* One swipeable line on phones; a wrapped row from sm up. */}
-      <div className="no-scrollbar flex items-baseline gap-x-5 overflow-x-auto rounded-2xl border-[1.5px] border-line bg-card px-4 py-3 sm:flex-wrap sm:gap-x-7 sm:gap-y-3 sm:overflow-visible sm:px-5 sm:py-4">
+      {/* Phones: one line spread edge to edge, so it fills the card. From sm
+          up: a wrapped row reading left to right. */}
+      <div className="no-scrollbar flex items-baseline justify-between gap-x-4 overflow-x-auto rounded-2xl border-[1.5px] border-line bg-card px-4 py-3 sm:flex-wrap sm:justify-start sm:gap-x-7 sm:gap-y-3 sm:overflow-visible sm:px-5 sm:py-4">
         {core.map((st) => stat(st.value, st.label, st.label))}
         {extra.map((st) => stat(st.value, st.label, st.label, true))}
-
-        {bothRate && (
-          <div className="hidden flex-none items-baseline gap-1.5 md:flex md:ml-auto">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-dim">
-              {SITE.reviewers.him}
-            </span>
-            <span className="font-display text-xl font-extrabold leading-none text-ink">
-              {him.average.toFixed(1)}
-            </span>
-            <span className="font-mono text-[10px] uppercase tracking-widest text-dim">
-              vs
-            </span>
-            <span className="font-display text-xl font-extrabold leading-none text-ink">
-              {her.average.toFixed(1)}
-            </span>
-            <span className="font-mono text-[10px] uppercase tracking-widest text-dim">
-              {SITE.reviewers.her}
-            </span>
-          </div>
-        )}
       </div>
     </section>
   );

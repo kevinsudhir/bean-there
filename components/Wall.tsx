@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import type { Cafe } from "@/lib/types";
 import type { FilterState, SortKey } from "./Controls";
 import { useFilteredCafes } from "@/lib/useFilteredCafes";
@@ -47,26 +47,27 @@ function paramsFromFilters(f: FilterState): URLSearchParams {
  * measuring the screen.
  */
 export default function Wall({ cafes }: { cafes: Cafe[] }) {
-  const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const filters = useMemo(
-    () => filtersFromParams(new URLSearchParams(searchParams.toString())),
-    [searchParams],
+  // Filters live in local state so tapping one is instant. Routing them
+  // through the router instead would re-run this dynamic page on the server —
+  // a Supabase round-trip per tap, which was very noticeable on a phone.
+  const [filters, setFilters] = useState<FilterState>(() =>
+    filtersFromParams(new URLSearchParams(searchParams.toString())),
   );
 
-  const setFilters = useCallback(
-    (next: FilterState) => {
-      const params = paramsFromFilters(next);
-      const query = params.toString();
-      // replace, not push: filtering shouldn't fill up the back button.
-      router.replace(query ? `${pathname}?${query}` : pathname, {
-        scroll: false,
-      });
-    },
-    [router, pathname],
-  );
+  /** Apply a filter change, and mirror it into the address bar for sharing. */
+  const applyFilters = useCallback((next: FilterState) => {
+    setFilters(next);
+    const query = paramsFromFilters(next).toString();
+    // history.replaceState, not router.replace: this updates the URL without
+    // asking Next.js to re-render or refetch anything.
+    window.history.replaceState(
+      null,
+      "",
+      query ? `${window.location.pathname}?${query}` : window.location.pathname,
+    );
+  }, []);
 
   const [openCafe, setOpenCafe] = useState<Cafe | null>(null);
 
@@ -98,7 +99,7 @@ export default function Wall({ cafes }: { cafes: Cafe[] }) {
     areas,
     allTags,
     filters,
-    onFilters: setFilters,
+    onFilters: applyFilters,
     openCafe,
     onOpen: setOpenCafe,
     onClose: () => setOpenCafe(null),

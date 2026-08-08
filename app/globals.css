@@ -48,6 +48,21 @@
   box-sizing: border-box;
 }
 
+/*
+ * Tap responsiveness: browsers hold a tap for ~300ms to see if it's a
+ * double-tap to zoom. We never want that gesture on controls, so taps
+ * register immediately. Also kills the grey flash on Android.
+ */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 html,
 body {
   padding: 0;
