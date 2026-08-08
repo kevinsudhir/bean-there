@@ -2,6 +2,8 @@
 
 import type { Cafe } from "@/lib/types";
 import { overallScore, isLoved } from "@/lib/config";
+import { visitCount } from "@/lib/visits";
+import { cafeDistance, formatDistance, type LatLng } from "@/lib/geo";
 import WallCup from "./WallCup";
 
 /**
@@ -11,12 +13,17 @@ import WallCup from "./WallCup";
 export default function CafeListRow({
   cafe,
   onOpen,
+  here = null,
 }: {
   cafe: Cafe;
   onOpen: (cafe: Cafe) => void;
+  /** Visitor's position, when they've sorted by distance. */
+  here?: LatLng | null;
 }) {
   const overall = overallScore(cafe.scores);
   const loved = isLoved(cafe);
+  const visits = visitCount(cafe);
+  const distance = cafeDistance(cafe, here);
 
   return (
     <button
@@ -33,6 +40,18 @@ export default function CafeListRow({
         </span>
         <span className="mt-1 block font-mono text-[9px] uppercase tracking-widest text-dim">
           {cafe.area}
+          {distance !== null && (
+            <>
+              <span className="mx-1 text-line">·</span>
+              <span className="text-amber">{formatDistance(distance)}</span>
+            </>
+          )}
+          {visits > 1 && (
+            <>
+              <span className="mx-1 text-line">·</span>
+              <span className="text-amber">{visits} visits</span>
+            </>
+          )}
         </span>
       </span>
 

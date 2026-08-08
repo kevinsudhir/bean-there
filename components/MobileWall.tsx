@@ -27,6 +27,8 @@ export default function MobileWall({
   onOpen,
   onClose,
   onRandom,
+  here,
+  geoNotice,
 }: WallViewProps) {
   const [view, setView] = useState<MobileView>("list");
 
@@ -47,6 +49,12 @@ export default function MobileWall({
         onRandom={onRandom}
       />
 
+      {geoNotice && (
+        <p className="px-5 pt-1 font-mono text-[9px] uppercase tracking-widest text-amber">
+          {geoNotice}
+        </p>
+      )}
+
       <div className="px-5 pb-24 pt-3">
         {cafes.length === 0 ? (
           <p className="py-12 text-center font-voice text-lg italic text-dim">
@@ -57,13 +65,13 @@ export default function MobileWall({
         ) : view === "list" ? (
           <div className="flex flex-col gap-2.5">
             {cafes.map((cafe) => (
-              <CafeListRow key={cafe.id} cafe={cafe} onOpen={onOpen} />
+              <CafeListRow key={cafe.id} cafe={cafe} onOpen={onOpen} here={here} />
             ))}
           </div>
         ) : (
           <div className="flex flex-col gap-2.5">
             {cafes.map((cafe) => (
-              <CafeCard key={cafe.id} cafe={cafe} onOpen={onOpen} />
+              <CafeCard key={cafe.id} cafe={cafe} onOpen={onOpen} here={here} />
             ))}
           </div>
         )}

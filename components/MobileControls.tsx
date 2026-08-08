@@ -36,6 +36,7 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: "score", label: "Top rated" },
   { key: "recent", label: "Newest" },
   { key: "name", label: "A–Z" },
+  { key: "nearest", label: "Nearest" },
 ];
 
 /**

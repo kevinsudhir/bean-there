@@ -24,6 +24,8 @@ export default function DesktopWall({
   onOpen,
   onClose,
   onRandom,
+  here,
+  geoNotice,
 }: WallViewProps) {
   const [view, setView] = useState<DesktopView>("grid");
 
@@ -44,6 +46,12 @@ export default function DesktopWall({
         onRandom={onRandom}
       />
 
+      {geoNotice && (
+        <p className="px-6 pt-2 font-mono text-[10px] uppercase tracking-widest text-amber sm:px-16">
+          {geoNotice}
+        </p>
+      )}
+
       {view === "map" ? (
         <div className="mx-auto max-w-[1500px] px-16 pb-24 pt-6">
           <CafeMap cafes={cafes} onOpen={onOpen} />
@@ -52,7 +60,7 @@ export default function DesktopWall({
         <div className="mx-auto grid max-w-[1500px] grid-cols-2 gap-x-4 gap-y-6 px-16 pb-24 pt-6 lg:grid-cols-3">
           {cafes.length > 0 ? (
             cafes.map((cafe) => (
-              <CafeCard key={cafe.id} cafe={cafe} onOpen={onOpen} />
+              <CafeCard key={cafe.id} cafe={cafe} onOpen={onOpen} here={here} />
             ))
           ) : (
             <p className="col-span-full py-12 text-center font-voice text-xl italic text-dim">

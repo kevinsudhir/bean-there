@@ -3,7 +3,7 @@
 import { tagEmoji, tagHash } from "@/lib/config";
 import ThemeToggle from "./ThemeToggle";
 
-export type SortKey = "score" | "recent" | "name";
+export type SortKey = "score" | "recent" | "name" | "nearest";
 
 export interface FilterState {
   q: string;
@@ -17,6 +17,7 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: "score", label: "Top rated" },
   { key: "recent", label: "Newest" },
   { key: "name", label: "A–Z" },
+  { key: "nearest", label: "Nearest" },
 ];
 
 export type DesktopView = "grid" | "map";

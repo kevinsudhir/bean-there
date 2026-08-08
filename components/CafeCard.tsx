@@ -3,6 +3,7 @@
 import type { Cafe } from "@/lib/types";
 import { overallScore, isLoved } from "@/lib/config";
 import { visitCount, scoreDelta, formatDelta } from "@/lib/visits";
+import { cafeDistance, formatDistance, type LatLng } from "@/lib/geo";
 import WallCup from "./WallCup";
 
 /**
@@ -14,14 +15,18 @@ import WallCup from "./WallCup";
 export default function CafeCard({
   cafe,
   onOpen,
+  here = null,
 }: {
   cafe: Cafe;
   onOpen: (cafe: Cafe) => void;
+  /** Visitor's position, when they've sorted by distance. */
+  here?: LatLng | null;
 }) {
   const overall = overallScore(cafe.scores);
   const loved = isLoved(cafe);
   const visits = visitCount(cafe);
   const delta = scoreDelta(cafe);
+  const distance = cafeDistance(cafe, here);
 
   return (
     <div
@@ -57,6 +62,12 @@ export default function CafeCard({
         </div>
         <div className="mt-1.5 font-mono text-[10px] uppercase tracking-widest text-dim">
           {cafe.area}
+          {distance !== null && (
+            <>
+              <span className="mx-1.5 text-line">·</span>
+              <span className="text-amber">{formatDistance(distance)}</span>
+            </>
+          )}
         </div>
         <div className="mt-1.5 flex items-center justify-center gap-2">
           <span className="font-display text-xl font-extrabold text-amber">

@@ -5,10 +5,11 @@ import { useSearchParams } from "next/navigation";
 import type { Cafe } from "@/lib/types";
 import type { FilterState, SortKey } from "./Controls";
 import { useFilteredCafes } from "@/lib/useFilteredCafes";
+import { requestPosition, type LatLng } from "@/lib/geo";
 import DesktopWall from "./DesktopWall";
 import MobileWall from "./MobileWall";
 
-const SORT_KEYS: SortKey[] = ["score", "recent", "name"];
+const SORT_KEYS: SortKey[] = ["score", "recent", "name", "nearest"];
 
 /** Read the filters out of the URL, so a filtered view can be linked/shared. */
 function filtersFromParams(params: URLSearchParams): FilterState {
@@ -56,9 +57,12 @@ export default function Wall({ cafes }: { cafes: Cafe[] }) {
     filtersFromParams(new URLSearchParams(searchParams.toString())),
   );
 
-  /** Apply a filter change, and mirror it into the address bar for sharing. */
-  const applyFilters = useCallback((next: FilterState) => {
-    setFilters(next);
+  // Where the visitor is, once they've asked to sort by distance. Null until
+  // then — we never ask for a location unprompted.
+  const [here, setHere] = useState<LatLng | null>(null);
+  const [geoNotice, setGeoNotice] = useState<string | null>(null);
+
+  const writeUrl = useCallback((next: FilterState) => {
     const query = paramsFromFilters(next).toString();
     // history.replaceState, not router.replace: this updates the URL without
     // asking Next.js to re-render or refetch anything.
@@ -68,6 +72,34 @@ export default function Wall({ cafes }: { cafes: Cafe[] }) {
       query ? `${window.location.pathname}?${query}` : window.location.pathname,
     );
   }, []);
+
+  /** Apply a filter change, and mirror it into the address bar for sharing. */
+  const applyFilters = useCallback(
+    (next: FilterState) => {
+      setFilters(next);
+      writeUrl(next);
+      if (next.sort !== "nearest") setGeoNotice(null);
+
+      // Sorting by distance needs a location. Ask once, and if we can't get
+      // one, say why and fall back to Top rated rather than leaving the list
+      // in an order that doesn't match the selected sort.
+      if (next.sort === "nearest" && !here) {
+        setGeoNotice("Finding you…");
+        requestPosition()
+          .then((pos) => {
+            setHere(pos);
+            setGeoNotice(null);
+          })
+          .catch((err: Error) => {
+            setGeoNotice(err.message);
+            const fallback: FilterState = { ...next, sort: "score" };
+            setFilters(fallback);
+            writeUrl(fallback);
+          });
+      }
+    },
+    [here, writeUrl],
+  );
 
   const [openCafe, setOpenCafe] = useState<Cafe | null>(null);
 
@@ -84,7 +116,7 @@ export default function Wall({ cafes }: { cafes: Cafe[] }) {
         .sort(),
     [cafes],
   );
-  const visible = useFilteredCafes(cafes, filters);
+  const visible = useFilteredCafes(cafes, filters, here);
 
   /** Open a random café from the ones currently showing. */
   const openRandom = useCallback(() => {
@@ -104,6 +136,8 @@ export default function Wall({ cafes }: { cafes: Cafe[] }) {
     onOpen: setOpenCafe,
     onClose: () => setOpenCafe(null),
     onRandom: openRandom,
+    here,
+    geoNotice,
   };
 
   return (
@@ -130,4 +164,8 @@ export interface WallViewProps {
   onOpen: (cafe: Cafe) => void;
   onClose: () => void;
   onRandom: () => void;
+  /** The visitor's position, once they've sorted by distance. */
+  here: LatLng | null;
+  /** Progress or failure message from the location request. */
+  geoNotice: string | null;
 }
