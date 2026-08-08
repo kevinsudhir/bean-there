@@ -48,12 +48,99 @@ export default function CafeMap({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const ctxRef = useRef<LeafletContext | null>(null);
+  const meRef = useRef<Leaflet.Marker | null>(null);
   const [ready, setReady] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [nearest, setNearest] = useState<string | null>(null);
   const { theme } = useTheme();
 
   const locatedCount = cafes.filter(
     (c) => typeof c.lat === "number" && typeof c.lng === "number",
   ).length;
+
+  /**
+   * Ask the browser where the visitor is, drop a marker, frame it with the
+   * closest café, and name that café. Straight-line distance is plenty here —
+   * we're ranking a handful of cafés in one city, not routing.
+   */
+  function findMe() {
+    const ctx = ctxRef.current;
+    if (!ctx || !navigator.geolocation) {
+      setNearest("Location isn't available in this browser.");
+      return;
+    }
+    // Browsers only expose location on a secure origin. Worth saying plainly,
+    // because visiting a dev server by LAN IP silently fails otherwise.
+    if (!window.isSecureContext) {
+      setNearest("Location needs a secure (https) connection.");
+      return;
+    }
+    setLocating(true);
+    setNearest(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const { L, map } = ctx;
+
+        meRef.current?.remove();
+        meRef.current = L.marker([latitude, longitude], {
+          icon: L.divIcon({
+            className: "",
+            html: '<div class="mepin"></div>',
+            iconSize: [18, 18],
+            iconAnchor: [9, 9],
+          }),
+          title: "You are here",
+          alt: "Your location",
+        }).addTo(map);
+
+        const located = cafes.filter(
+          (c) => typeof c.lat === "number" && typeof c.lng === "number",
+        );
+        const closest = located
+          .map((c) => ({
+            cafe: c,
+            d: map.distance([latitude, longitude], [c.lat!, c.lng!]),
+          }))
+          .sort((a, b) => a.d - b.d)[0];
+
+        if (closest) {
+          map.fitBounds(
+            L.latLngBounds([
+              [latitude, longitude],
+              [closest.cafe.lat!, closest.cafe.lng!],
+            ]).pad(0.35),
+            { maxZoom: 16 },
+          );
+          const km = closest.d / 1000;
+          setNearest(
+            `Closest: ${closest.cafe.name} · ${
+              km < 1 ? `${Math.round(closest.d)} m` : `${km.toFixed(1)} km`
+            } away`,
+          );
+        } else {
+          map.setView([latitude, longitude], 14);
+          setNearest("You're on the map — no cafés are pinned yet.");
+        }
+        setLocating(false);
+      },
+      (err) => {
+        // Say WHY, so it's actionable rather than a dead end.
+        setNearest(
+          err.code === err.PERMISSION_DENIED
+            ? "Location blocked — allow it for this site in your browser settings."
+            : err.code === err.TIMEOUT
+              ? "Location timed out — try again."
+              : "Couldn't get your location.",
+        );
+        setLocating(false);
+      },
+      // High accuracy wants GPS, which desktops don't have and phones are slow
+      // to fix; the coarse wifi/IP position is plenty for "which café is
+      // closest", and a cached fix up to 5 minutes old is fine too.
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 },
+    );
+  }
 
   // Create the map once on mount, destroy it on unmount.
   useEffect(() => {
@@ -145,7 +232,20 @@ export default function CafeMap({
           ref={containerRef}
           className="h-[62vh] min-h-[360px] w-full md:h-[calc(100vh-340px)] md:min-h-[440px]"
         />
+        {/* Above Leaflet's panes (z-[400]) but below the review modal. */}
+        <button
+          onClick={findMe}
+          disabled={locating || !ready}
+          className="absolute right-3 top-3 z-[500] rounded-pill border-[1.5px] border-line bg-bg px-3 py-2 font-mono text-[10px] uppercase tracking-wide text-ink shadow-sm disabled:opacity-50"
+        >
+          {locating ? "Locating…" : "◎ Near me"}
+        </button>
       </div>
+      {nearest && (
+        <p className="mt-2.5 text-center font-mono text-[10px] uppercase tracking-widest text-amber">
+          {nearest}
+        </p>
+      )}
       {locatedCount < cafes.length && (
         <p className="mt-2.5 text-center font-mono text-[10px] uppercase tracking-widest text-dim">
           {cafes.length - locatedCount} café

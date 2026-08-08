@@ -23,6 +23,7 @@ export default function DesktopWall({
   openCafe,
   onOpen,
   onClose,
+  onRandom,
 }: WallViewProps) {
   const [view, setView] = useState<DesktopView>("grid");
 
@@ -38,6 +39,9 @@ export default function DesktopWall({
         allTags={allTags}
         view={view}
         onView={setView}
+        shown={cafes.length}
+        total={totalCafes}
+        onRandom={onRandom}
       />
 
       {view === "map" ? (

@@ -11,6 +11,7 @@ import {
   SITE,
 } from "@/lib/config";
 import CupIcon from "@/components/CupIcon";
+import { CafeJsonLd } from "@/components/StructuredData";
 import ScorePills from "@/components/ScorePills";
 import EditCafeLink from "@/components/EditCafeLink";
 
@@ -62,6 +63,7 @@ export default async function CafePage({
 
   return (
     <main className="mx-auto flex max-w-[1100px] flex-col items-center gap-4 px-6 py-10 text-center">
+      <CafeJsonLd cafe={cafe} />
       <div className="flex w-full items-center justify-between">
         <Link
           href="/"

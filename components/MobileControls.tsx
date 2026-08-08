@@ -53,6 +53,9 @@ export default function MobileControls({
   allTags,
   view,
   onView,
+  shown,
+  total,
+  onRandom,
 }: {
   state: FilterState;
   onChange: (next: FilterState) => void;
@@ -60,6 +63,9 @@ export default function MobileControls({
   allTags: string[];
   view: MobileView;
   onView: (v: MobileView) => void;
+  shown: number;
+  total: number;
+  onRandom: () => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -198,6 +204,19 @@ export default function MobileControls({
               </div>
             </div>
           )}
+
+          <div className="flex items-center justify-between pt-1">
+            <span className="font-mono text-[9px] uppercase tracking-widest text-dim">
+              {shown === total ? `${total} cafés` : `${shown} of ${total}`}
+            </span>
+            <button
+              onClick={onRandom}
+              disabled={shown === 0}
+              className="rounded-pill border-[1.5px] border-line px-3 py-2 font-mono text-[10px] uppercase tracking-wide text-ink disabled:opacity-40"
+            >
+              ☕ Surprise me
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -29,6 +29,9 @@ export default function Controls({
   allTags,
   view,
   onView,
+  shown,
+  total,
+  onRandom,
 }: {
   state: FilterState;
   onChange: (next: FilterState) => void;
@@ -36,6 +39,9 @@ export default function Controls({
   allTags: string[];
   view: DesktopView;
   onView: (v: DesktopView) => void;
+  shown: number;
+  total: number;
+  onRandom: () => void;
 }) {
   const set = (patch: Partial<FilterState>) => onChange({ ...state, ...patch });
   const toggleTag = (t: string) =>
@@ -125,6 +131,18 @@ export default function Controls({
       )}
 
       <div className="ml-auto flex flex-wrap items-center gap-x-[22px] gap-y-3.5">
+        <span className="font-mono text-[10px] uppercase tracking-widest text-dim">
+          {shown === total ? `${total} cafés` : `${shown} of ${total}`}
+        </span>
+
+        <button
+          onClick={onRandom}
+          disabled={shown === 0}
+          className="h-11 rounded-pill border-[1.5px] border-line px-4 font-mono text-[10px] uppercase tracking-wide text-ink hover:border-ink disabled:opacity-40"
+        >
+          ☕ Surprise me
+        </button>
+
         <div className="flex h-11 items-center gap-2 rounded-pill border-[1.5px] border-line px-2">
           <button
             onClick={() => onView("grid")}

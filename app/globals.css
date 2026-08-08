@@ -187,6 +187,16 @@ body {
   color: #fff;
 }
 
+/* "You are here" dot for the Near me button. */
+.mepin {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #2f7fe4;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 3px rgba(47, 127, 228, 0.3);
+}
+
 /* Pour game: steam puffs rising on a great pour. */
 @keyframes steam-rise {
   0% { opacity: 0; transform: translateY(6px) scaleX(1); }

@@ -26,6 +26,7 @@ export default function MobileWall({
   openCafe,
   onOpen,
   onClose,
+  onRandom,
 }: WallViewProps) {
   const [view, setView] = useState<MobileView>("list");
 
@@ -41,6 +42,9 @@ export default function MobileWall({
         allTags={allTags}
         view={view}
         onView={setView}
+        shown={cafes.length}
+        total={totalCafes}
+        onRandom={onRandom}
       />
 
       <div className="px-5 pb-24 pt-3">

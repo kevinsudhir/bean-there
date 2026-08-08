@@ -1,6 +1,10 @@
+import { Suspense } from "react";
 import Header from "@/components/Header";
 import Wall from "@/components/Wall";
+import StatsStrip from "@/components/StatsStrip";
+import SiteFooter from "@/components/SiteFooter";
 import AddCafeButton from "@/components/AddCafeButton";
+import { WallJsonLd } from "@/components/StructuredData";
 import { getCafes } from "@/lib/cafes";
 
 /**
@@ -26,8 +30,14 @@ export default async function HomePage({
 
   return (
     <main>
+      <WallJsonLd cafes={cafes} />
       <Header />
-      <Wall cafes={cafes} />
+      <StatsStrip cafes={cafes} />
+      {/* Wall reads the filters from the URL, so it needs a Suspense boundary. */}
+      <Suspense fallback={null}>
+        <Wall cafes={cafes} />
+      </Suspense>
+      {cafes.length > 0 && <SiteFooter />}
       <AddCafeButton hide={cafes.length === 0} />
     </main>
   );
