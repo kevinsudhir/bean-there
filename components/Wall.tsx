@@ -136,7 +136,10 @@ export default function Wall({ cafes }: { cafes: Cafe[] }) {
     onOpen: setOpenCafe,
     onClose: () => setOpenCafe(null),
     onRandom: openRandom,
-    here,
+    // Distances belong to the "nearest" view — keep the position in state so
+    // switching back doesn't re-prompt, but stop labelling cards once the
+    // list is ordered by something else.
+    here: filters.sort === "nearest" ? here : null,
     geoNotice,
   };
 
