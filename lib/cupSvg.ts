@@ -18,7 +18,7 @@ export function cupSvg(type: ItemType, rating: number, size = 150): string {
   let body: string;
   let yBot: number;
   let yTop: number;
-  let behind = "";
+  let clipExtra = ""; // extra path unioned into the clip (the muffin dome)
   let front = "";
 
   if (type === "latte" || type === "cold") {
@@ -26,10 +26,12 @@ export function cupSvg(type: ItemType, rating: number, size = 150): string {
     yBot = 52;
     yTop = 12;
   } else if (type === "bake" || type === "dessert") {
+    // The fill rises through the whole muffin (dome + case), like the cups —
+    // a case-only fill looked identical for most ratings.
     body = "M16,30 L20,52 C20,54 40,54 40,52 L44,30 Z";
     yBot = 52;
-    yTop = 22;
-    behind = `<path d="M14,30 C14,18 46,18 46,30 Z" fill="${CREMA}"/>`;
+    yTop = 20;
+    clipExtra = `<path d="M14,30 C14,18 46,18 46,30 Z"/>`;
     front = `<path d="M14,30 C14,18 46,18 46,30 Z" fill="none" stroke="${STROKE}" stroke-width="2" stroke-linejoin="round"/>`;
   } else if (type === "food") {
     body = "M14,40 C14,16 46,16 46,40 Z";
@@ -46,7 +48,7 @@ export function cupSvg(type: ItemType, rating: number, size = 150): string {
   const yF = yBot - (yBot - yTop) * f;
   const h = yBot - yF + 6;
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="${size}" height="${size}"><defs><clipPath id="c"><path d="${body}"/></clipPath></defs>${behind}<g clip-path="url(#c)"><rect width="60" height="60" fill="${CARD}"/><rect x="0" y="${yF}" width="60" height="${h}" fill="${ESPRESSO}"/><rect x="0" y="${yF}" width="60" height="3.5" fill="${CREMA}"/></g>${front}<path d="${body}" fill="none" stroke="${STROKE}" stroke-width="2" stroke-linejoin="round"/></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="${size}" height="${size}"><defs><clipPath id="c">${clipExtra}<path d="${body}"/></clipPath></defs><g clip-path="url(#c)"><rect width="60" height="60" fill="${CARD}"/><rect x="0" y="${yF}" width="60" height="${h}" fill="${ESPRESSO}"/><rect x="0" y="${yF}" width="60" height="3.5" fill="${CREMA}"/></g>${front}<path d="${body}" fill="none" stroke="${STROKE}" stroke-width="2" stroke-linejoin="round"/></svg>`;
 }
 
 /** The cup SVG as a data URI, ready for <img src={…}> inside a share card. */

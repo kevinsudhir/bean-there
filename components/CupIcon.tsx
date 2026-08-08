@@ -106,10 +106,13 @@ export default function CupIcon({
     );
   }
 
-  // Muffin (bakes and desserts).
+  // Muffin (bakes and desserts). The clip is the UNION of dome + case so the
+  // fill rises through the whole muffin like coffee in the cups — previously
+  // only the small case filled, so most ratings looked identical.
   if (type === "bake" || type === "dessert") {
+    const dome = "M14,30 C14,18 46,18 46,30 Z";
     const body = "M16,30 L20,52 C20,54 40,54 40,52 L44,30 Z";
-    const yF = 52 - (52 - 22) * f;
+    const yF = 52 - (52 - 20) * f;
     return (
       <svg
         viewBox="0 0 60 60"
@@ -120,16 +123,17 @@ export default function CupIcon({
       >
         <defs>
           <clipPath id={clipId}>
+            <path d={dome} />
             <path d={body} />
           </clipPath>
         </defs>
-        <path d="M14,30 C14,18 46,18 46,30 Z" fill={CREMA} />
         <g clipPath={`url(#${clipId})`}>
           <rect x="0" y="0" width="60" height="60" fill={CARD} />
           <rect x="0" y={yF} width="60" height={52 - yF + 6} fill={ESPRESSO} />
+          <rect x="0" y={yF} width="60" height="3.5" fill={CREMA} />
         </g>
         <path
-          d="M14,30 C14,18 46,18 46,30 Z"
+          d={dome}
           fill="none"
           stroke={STROKE}
           strokeWidth="2"
